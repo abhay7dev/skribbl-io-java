@@ -1,0 +1,11 @@
+apply plugin: 'application'
+
+mainClassName = 'dev.abhay7.skribbl.client.Main' // Adjust to your actual main class
+
+jar {
+    manifest {
+        attributes(
+            'Main-Class': mainClassName
+        )
+    }
+}
