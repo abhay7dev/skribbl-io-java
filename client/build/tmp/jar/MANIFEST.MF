@@ -1,3 +1,0 @@
-Manifest-Version: 1.0
-Main-Class: dev.abhay7.skribbl.client.Main
-

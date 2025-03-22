@@ -22,7 +22,7 @@ jobs:
           cache: 'gradle'
 
       - name: Build project with Gradle
-        run: ./gradlew build --no-daemon
+        run: gradle wrapper && ./gradlew build --no-daemon
 
       - name: Upload client JAR as release asset
         uses: actions/upload-release-asset@v1
