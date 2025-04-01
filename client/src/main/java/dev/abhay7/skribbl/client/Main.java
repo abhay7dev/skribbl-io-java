@@ -14,10 +14,23 @@ public class Main extends JPanel {
         board = new Board(player);
     }
 
-    public static void main(String... args) {
+    public static void main(String... args) throws InterruptedException {
         System.out.println("Skribbl Client running!");
         boolean gameGoing = true;
         Main main = new Main();
+        JFrame frame = new JFrame("Skribbl 2");
+        frame.getContentPane().setBackground(new Color(0, 0, 0, 0));
+        int width = 1920;
+        int height = 1080;
+        frame.setSize(width, height);
+        frame.setLocationRelativeTo(null);
+        frame.setLayout(new BorderLayout());
+        frame.setVisible(true);
+        frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+
+        frame.setResizable(true);
+        frame.add(main);
+        frame.addMouseListener(main.player);
 
         while(gameGoing) {
             //Cient does its own logic - sends to server
@@ -28,6 +41,8 @@ public class Main extends JPanel {
 
             //Client displays the results
             main.repaint();
+
+            Thread.sleep(10);
         }
         
         
@@ -37,7 +52,7 @@ public class Main extends JPanel {
     @Override
     public void paintComponent(Graphics g) {
         super.paintComponent(g);
-        board.paintComponent(g);
+        board.repaint();
     }
 
 }

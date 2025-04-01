@@ -51,6 +51,7 @@ public class Board extends JPanel {
 
         if(currPlayer.getMouseDown()) {
             drawings.add(new Line(prevMousex, prevMousey, currX, currY, color));
+            System.out.println("add Line");
         }
         
 
