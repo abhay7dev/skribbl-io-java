@@ -3,6 +3,7 @@ package dev.abhay7.skribbl.client;
 import java.awt.*;
 
 import javax.swing.*;
+import javax.swing.border.Border;
 
 public class Main extends JPanel {
     
@@ -28,9 +29,30 @@ public class Main extends JPanel {
         frame.setVisible(true);
         frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
 
+        JPanel gameRoom = new JPanel(new FlowLayout(FlowLayout.LEFT, 20, 20));
+
+        Border border = BorderFactory.createLineBorder(Color.BLACK, 2);
+        JPanel board = new JPanel();
+        board.setBackground(Color.WHITE);
+        board.setBorder(border);
+
+        board.setPreferredSize(new Dimension(
+            (int) (width * 0.45), // 25% width of the frame
+            (int) (height * 0.45) // 25% height of the frame
+        ));
+
+        gameRoom.add(board);
+
+        board.add(main);
+        board.addMouseListener(main.player);
+        board.addMouseMotionListener(main.player);
+        
+        
         frame.setResizable(true);
-        frame.add(main);
-        frame.addMouseListener(main.player);
+        frame.add(gameRoom);
+        
+
+        
 
         while(gameGoing) {
             //Cient does its own logic - sends to server
@@ -42,6 +64,8 @@ public class Main extends JPanel {
             //Client displays the results
             main.repaint();
 
+            
+
             Thread.sleep(10);
         }
         
@@ -52,7 +76,8 @@ public class Main extends JPanel {
     @Override
     public void paintComponent(Graphics g) {
         super.paintComponent(g);
-        board.repaint();
+        board.paintComponent(g);
+        g.drawRect(0, 0, 20, 20);
     }
 
 }

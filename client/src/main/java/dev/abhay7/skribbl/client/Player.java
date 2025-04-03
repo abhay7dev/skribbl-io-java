@@ -34,6 +34,7 @@ public class Player extends JPanel implements MouseMotionListener, MouseListener
     }
 
     public int getMouseX() {
+        System.out.println(mouseX + " " + mouseY);
         return mouseX;
     }
 
@@ -47,12 +48,12 @@ public class Player extends JPanel implements MouseMotionListener, MouseListener
 
     @Override
     public void mouseDragged(MouseEvent e) {
-
+        mouseX = e.getX();
+        mouseY = e.getY();
     }
 
     @Override
     public void mouseMoved(MouseEvent e) {
-        System.out.println("o");
         mouseX = e.getX();
         mouseY = e.getY();
     }

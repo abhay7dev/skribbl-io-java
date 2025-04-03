@@ -16,7 +16,7 @@ public class Board extends JPanel {
     Color color;
     
     //this will be updated to more than lines LATER - for now im keeping it simple
-    private ArrayList<Line> drawings;
+    private static ArrayList<Line> drawings;
 
     public Board(Player p) {
         drawings = new ArrayList<>();
@@ -50,16 +50,18 @@ public class Board extends JPanel {
         int currY = currPlayer.getMouseY();
 
         if(currPlayer.getMouseDown()) {
-            drawings.add(new Line(prevMousex, prevMousey, currX, currY, color));
-            System.out.println("add Line");
+            drawings.add(new Line(prevMousex-5, prevMousey-25, currX-5, currY-25, color));
         }
-        
 
-        for (Line l : drawings) {
+        for (Line l : Board.getLines()) {
             g.drawLine(l.startX, l.startY, l.endX, l.endY);
         }
 
         prevMousex = currX;
         prevMousey = currY;
+    }
+
+    public static ArrayList<Line> getLines() {
+        return drawings;
     }
 }
