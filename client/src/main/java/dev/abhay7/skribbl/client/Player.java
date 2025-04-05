@@ -34,7 +34,6 @@ public class Player extends JPanel implements MouseMotionListener, MouseListener
     }
 
     public int getMouseX() {
-        System.out.println(mouseX + " " + mouseY);
         return mouseX;
     }
 

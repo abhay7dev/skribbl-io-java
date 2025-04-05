@@ -49,12 +49,16 @@ public class Board extends JPanel {
         int currX = currPlayer.getMouseX();
         int currY = currPlayer.getMouseY();
 
+
         if(currPlayer.getMouseDown()) {
-            drawings.add(new Line(prevMousex-5, prevMousey-25, currX-5, currY-25, color));
+            drawings.add(new Line(prevMousex, prevMousey-20, currX, currY-20, color));
         }
 
+        Graphics2D g2d = (Graphics2D) g;
+        g2d.setStroke(new BasicStroke(3));
+        g2d.setColor(color);
         for (Line l : Board.getLines()) {
-            g.drawLine(l.startX, l.startY, l.endX, l.endY);
+            g2d.drawLine(l.startX, l.startY, l.endX, l.endY);
         }
 
         prevMousex = currX;
