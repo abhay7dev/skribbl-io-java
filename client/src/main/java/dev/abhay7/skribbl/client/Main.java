@@ -34,16 +34,28 @@ public class Main extends JPanel {
         frame.setVisible(true);
         frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
 
-        JPanel gameRoom = new JPanel(new FlowLayout(FlowLayout.LEFT, 20, 20));
+        JPanel gameRoom = new JPanel(new BorderLayout());
+
+        JPanel leftPanel = new JPanel();
+        leftPanel.setLayout(new BoxLayout(leftPanel, BoxLayout.Y_AXIS));
 
         Border border = BorderFactory.createLineBorder(Color.BLACK, 2);
         JPanel board = new JPanel(new BorderLayout());
-        board.setBackground(Color.BLUE);
+        board.setBackground(Color.WHITE);
         board.setBorder(border);
 
+        JPanel drawingMenu = new JPanel(new BorderLayout());
+        drawingMenu.setBackground(Color.WHITE);
+        drawingMenu.setBorder(border);
+        drawingMenu.setPreferredSize(new Dimension(
+            (int) (width * 0.55), // 25% width of the frame
+            (int) (height * 0.15) // 25% height of the frame
+        ));
+        
+
         board.setPreferredSize(new Dimension(
-            (int) (width * 0.45), // 25% width of the frame
-            (int) (height * 0.45) // 25% height of the frame
+            (int) (width * 0.55),
+            (int) (height * 0.45) 
         ));
         
         JLabel word = new JLabel("loading", SwingConstants.CENTER);
@@ -59,13 +71,27 @@ public class Main extends JPanel {
             SwingUtilities.invokeLater(() -> word.setText(actualWord));
         }).start();
 
-        gameRoom.add(board);
+        leftPanel.add(board);
+        leftPanel.add(Box.createVerticalStrut(10));
+        leftPanel.add(drawingMenu);
 
         board.add(main);
         board.addMouseListener(main.player);
         board.addMouseMotionListener(main.player);
+
+        JPanel chatArea = new JPanel();
+        chatArea.setBackground(new Color(230, 230, 250)); // lavender
+        chatArea.setPreferredSize(new Dimension(800, 800));
         
-        
+        JPanel sideContainer = new JPanel(new FlowLayout(FlowLayout.LEFT, 0, 20));
+        sideContainer.add(leftPanel);
+        sideContainer.setBackground(new Color(230, 230, 250));
+
+        gameRoom.add(sideContainer, BorderLayout.WEST);
+        gameRoom.add(chatArea, BorderLayout.CENTER);
+
+
+
         frame.setResizable(true);
         frame.add(gameRoom);
 
@@ -92,7 +118,7 @@ public class Main extends JPanel {
     public void paintComponent(Graphics g) {
 
         g.setColor(Color.WHITE);
-        g.fillRect(0,0,(int)(1920 * 0.45), (int)(1080 * 0.45));
+        g.fillRect(0,0,(int)(1920 * 0.55), (int)(1080 * 0.55));
 
         //super.paintComponent(g);
         board.paintComponent(g);        
@@ -101,7 +127,7 @@ public class Main extends JPanel {
     public static String getAWord() {
         ArrayList<String> words = new ArrayList<String>();
         try {
-            Scanner sc = new Scanner(new File("worddata.txt"));
+            Scanner sc = new Scanner(new File("client/src/main/java/dev/abhay7/skribbl/client/worddata.txt"));
             while (sc.hasNext()) {
                 String word = sc.next();
                 words.add(word.substring(0,word.length()-1));
@@ -109,7 +135,7 @@ public class Main extends JPanel {
             sc.close();
         }
         catch (Exception e) {
-
+            System.out.println(e);
         }
 
         return words.get((int) (Math.random() * words.size()));
