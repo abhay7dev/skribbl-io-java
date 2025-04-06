@@ -2,6 +2,14 @@ apply plugin: 'application'
 
 mainClassName = 'dev.abhay7.skribbl.client.Main' // Adjust to your actual main class
 
+repositories {
+    mavenCentral()
+}
+
+dependencies {
+    implementation 'com.formdev:flatlaf:3.2'
+}
+
 jar {
     manifest {
         attributes(
