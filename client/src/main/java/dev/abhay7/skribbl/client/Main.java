@@ -23,15 +23,9 @@ public class Main extends JPanel {
     }
 
     public static void main(String... args) throws InterruptedException, FileNotFoundException {
-        try (InputStream theme = Main.class.getResourceAsStream("client/src/main/java/dev/abhay7/skribbl/client/resources/playful-light.properties")) {
-            if (theme != null) {
-                IntelliJTheme.setup(theme);
-            } else {
-                System.err.println("Theme file not found!");
-            }
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
+        
+        FlatLightLaf.registerCustomDefaultsSource("style");
+        FlatLightLaf.setup();
 
         boolean gameGoing = true;
         Main main = new Main();
@@ -50,14 +44,11 @@ public class Main extends JPanel {
         JPanel leftPanel = new JPanel();
         leftPanel.setLayout(new BoxLayout(leftPanel, BoxLayout.Y_AXIS));
 
-        Border border = BorderFactory.createLineBorder(Color.BLACK, 2);
         JPanel board = new JPanel(new BorderLayout());
         board.setBackground(Color.WHITE);
-        board.setBorder(border);
 
         JPanel drawingMenu = new JPanel(new BorderLayout());
         drawingMenu.setBackground(Color.WHITE);
-        drawingMenu.setBorder(border);
         drawingMenu.setPreferredSize(new Dimension(
             (int) (width * 0.55), // 25% width of the frame
             (int) (height * 0.15) // 25% height of the frame
@@ -71,7 +62,6 @@ public class Main extends JPanel {
         
         JLabel word = new JLabel("loading", SwingConstants.CENTER);
         word.setBackground(Color.WHITE);
-        word.setBorder(border);
         word.setOpaque(true);
         board.add(word, BorderLayout.NORTH);
 
