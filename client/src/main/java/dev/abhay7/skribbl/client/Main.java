@@ -10,6 +10,8 @@ import java.io.*;
 
 import java.lang.Thread;
 
+import com.formdev.flatlaf.*;
+
 public class Main extends JPanel {
     
     Player player; //eventually the server should decide what the player's initial state is
@@ -21,7 +23,16 @@ public class Main extends JPanel {
     }
 
     public static void main(String... args) throws InterruptedException, FileNotFoundException {
-        System.out.println("Skribbl Client running!");
+        try (InputStream theme = Main.class.getResourceAsStream("client/src/main/java/dev/abhay7/skribbl/client/resources/playful-light.properties")) {
+            if (theme != null) {
+                IntelliJTheme.setup(theme);
+            } else {
+                System.err.println("Theme file not found!");
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+
         boolean gameGoing = true;
         Main main = new Main();
         JFrame frame = new JFrame("Skribbl 2");
