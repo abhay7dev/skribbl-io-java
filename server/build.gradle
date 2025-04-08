@@ -1,11 +1,24 @@
-apply plugin: 'application'
+plugins {
+    id 'java'
+    id 'application'
+}
 
-mainClassName = 'dev.abhay7.skribbl.server.Main' // Adjust to your actual main class
+group = 'dev.abhay7'
+version = '1.0'
+
+application {
+    mainClass = 'dev.abhay7.skribbl.server.Main'
+}
+
+java {
+    sourceCompatibility = JavaVersion.VERSION_21
+    targetCompatibility = JavaVersion.VERSION_21
+}
 
 jar {
     manifest {
         attributes(
-            'Main-Class': mainClassName
+            'Main-Class': application.mainClass
         )
     }
 }

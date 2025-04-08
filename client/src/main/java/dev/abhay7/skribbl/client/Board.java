@@ -2,8 +2,8 @@ package dev.abhay7.skribbl.client;
 
 import javax.swing.*;
 import java.awt.*;
-import java.io.FileOutputStream;
-import java.io.ObjectOutputStream;
+// import java.io.FileOutputStream;
+// import java.io.ObjectOutputStream;
 //import java.io.Serializable;
 import java.util.ArrayList;
 

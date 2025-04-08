@@ -2,6 +2,8 @@
 
 https://skribbl.io clone in java (with a client/server).
 
+Do NOT use the VSCode run button. Always use the following commands or use the command palette and run the gradle task to run the project.
+
 ### How to compile and run [WIP]
 
 ```bash
@@ -12,4 +14,4 @@ https://skribbl.io clone in java (with a client/server).
 ./gradlew clean         # Clean the Build
 ```
 
-Remove the `./` if on Windows.
+Remove the `./` if on Windows Terminal. Powershell should will work fine with `./`.

@@ -25,6 +25,8 @@ public class Main extends JPanel {
     }
 
     public static void main(String... args) throws InterruptedException, FileNotFoundException {
+        // System.out.println("Working Directory = " + System.getProperty("user.dir"));
+
         
         //FlatIntelliJLaf.registerCustomDefaultsSource("style");
         FlatIntelliJLaf.setup();
@@ -197,17 +199,19 @@ public class Main extends JPanel {
 
     public static String getAWord() {
         ArrayList<String> words = new ArrayList<String>();
-        try {
-            Scanner sc = new Scanner(new File("client/src/main/java/dev/abhay7/skribbl/client/worddata.txt"));
-            while (sc.hasNext()) {
-                String word = sc.next();
-                words.add(word.substring(0,word.length()-1));
-            }
-            sc.close();
-        }
-        catch (Exception e) {
-            System.out.println(e);
-        }
+        // try {
+        //     Scanner sc = new Scanner(new File("src/main/resources/worddata.txt"));
+        //     // Scanner sc = new Scanner(new File("client/src/main/java/dev/abhay7/skribbl/client/worddata.txt"));
+        //     while (sc.hasNext()) {
+        //         String word = sc.next();
+        //         words.add(word.substring(0,word.length()-1));
+        //     }
+        //     sc.close();
+        // }
+        // catch (Exception e) {
+        //     System.out.println(e);
+        // }
+        words.add("hello");
 
         return words.get((int) (Math.random() * words.size()));
 

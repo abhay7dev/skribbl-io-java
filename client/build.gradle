@@ -1,6 +1,14 @@
-apply plugin: 'application'
+plugins {
+    id 'application'
+    id 'java'
+}
 
-mainClassName = 'dev.abhay7.skribbl.client.Main' // Adjust to your actual main class
+group = 'dev.abhay7'
+version = '1.0'
+
+application {
+    mainClass = 'dev.abhay7.skribbl.client.Main'
+}
 
 repositories {
     mavenCentral()
@@ -10,18 +18,15 @@ dependencies {
     implementation 'com.formdev:flatlaf:3.2'
 }
 
+java {
+    sourceCompatibility = JavaVersion.VERSION_21
+    targetCompatibility = JavaVersion.VERSION_21
+}
+
 jar {
     manifest {
         attributes(
-            'Main-Class': mainClassName
+            'Main-Class': application.mainClass
         )
-    }
-}
-
-sourceSets {
-    main {
-        resources {
-            srcDir 'src/main/resources'
-        }
     }
 }
