@@ -8,6 +8,7 @@ https://skribbl.io clone in java (with a client/server).
 ./gradlew build         # Build the Project
 ./gradlew :client:run   # Run client
 ./gradlew :server:run   # Run server
+./gradlew :server:run --args="--headless" # Run server without display. Faster during development
 ./gradlew clean         # Clean the Build
 ```
 
