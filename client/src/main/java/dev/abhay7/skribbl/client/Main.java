@@ -1,6 +1,8 @@
 package dev.abhay7.skribbl.client;
 
 import java.awt.*;
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
 
 import javax.swing.*;
 import javax.swing.border.Border;
@@ -18,21 +20,26 @@ public class Main extends JPanel {
     Board board;  // change this to the server sends the starting board over to the client
 
     public Main() {
-        player = new Player("drawing");
+        player = new Player("drawing", "myguy");
         board = new Board(player);
     }
 
     public static void main(String... args) throws InterruptedException, FileNotFoundException {
         
-        FlatLightLaf.registerCustomDefaultsSource("style");
-        FlatLightLaf.setup();
+        //FlatIntelliJLaf.registerCustomDefaultsSource("style");
+        FlatIntelliJLaf.setup();
+
+        //THE CLIENT SHOULD ADD MESSAGES ITSELF AND ADD A NEW STRING EVERYTIME IT GETS A CHAT MESSAGE
+        ArrayList<String> textMessages = new ArrayList<String>();
+
+        Border border = BorderFactory.createLineBorder(Color.black);
 
         boolean gameGoing = true;
         Main main = new Main();
         JFrame frame = new JFrame("Skribbl 2");
         frame.getContentPane().setBackground(new Color(0, 0, 0, 0));
-        int width = 1920;
-        int height = 1080;
+        int width = 1280;
+        int height = 720;
         frame.setSize(width, height);
         frame.setLocationRelativeTo(null);
         frame.setLayout(new BorderLayout());
@@ -47,12 +54,23 @@ public class Main extends JPanel {
         JPanel board = new JPanel(new BorderLayout());
         board.setBackground(Color.WHITE);
 
-        JPanel drawingMenu = new JPanel(new BorderLayout());
+        JPanel drawingMenu = new JPanel(new FlowLayout());
         drawingMenu.setBackground(Color.WHITE);
         drawingMenu.setPreferredSize(new Dimension(
             (int) (width * 0.55), // 25% width of the frame
             (int) (height * 0.15) // 25% height of the frame
         ));
+
+        drawingMenu.add(getColorButton(Color.RED, main.board));
+        drawingMenu.add(getColorButton(Color.BLUE, main.board));
+        drawingMenu.add(getColorButton(Color.GREEN, main.board));
+        drawingMenu.add(getColorButton(Color.ORANGE, main.board));
+        drawingMenu.add(getColorButton(Color.PINK, main.board));
+        drawingMenu.add(getColorButton(Color.BLACK, main.board));
+        drawingMenu.add(getColorButton(Color.WHITE, main.board));
+        drawingMenu.add(getColorButton(Color.YELLOW, main.board));
+        drawingMenu.add(getColorButton(Color.MAGENTA, main.board));
+        drawingMenu.add(getColorButton(Color.CYAN, main.board));
         
 
         board.setPreferredSize(new Dimension(
@@ -61,32 +79,76 @@ public class Main extends JPanel {
         ));
         
         JLabel word = new JLabel("loading", SwingConstants.CENTER);
-        word.setBackground(Color.WHITE);
+        word.setBackground(Color.LIGHT_GRAY);
         word.setOpaque(true);
         board.add(word, BorderLayout.NORTH);
 
+        board.setBorder(border);
+
+        //helps deal with the EDT
         new Thread(() -> {
-            String actualWord = getAWord(); // Blocking file IO
+            String actualWord = getAWord();
         
-            // Now update the label on the EDT
             SwingUtilities.invokeLater(() -> word.setText(actualWord));
         }).start();
 
         leftPanel.add(board);
         leftPanel.add(Box.createVerticalStrut(10));
         leftPanel.add(drawingMenu);
+        leftPanel.setBackground(new Color(230, 230, 250));
 
         board.add(main);
         board.addMouseListener(main.player);
         board.addMouseMotionListener(main.player);
 
-        JPanel chatArea = new JPanel();
+        JPanel chatArea = new JPanel(new FlowLayout(FlowLayout.RIGHT, 100, 20));
         chatArea.setBackground(new Color(230, 230, 250)); // lavender
         chatArea.setPreferredSize(new Dimension(800, 800));
+
+        JPanel chatBox = new JPanel(new BorderLayout());
+        chatBox.setPreferredSize(new Dimension(
+            (int) (width * 0.20), // 25% width of the frame
+            (int) (height * 0.60) // 25% height of the frame
+        ));
+        chatBox.setBorder(border);
+        chatBox.setBackground(Color.WHITE);
+
+        JLabel chatTitle = new JLabel("Chat", SwingConstants.CENTER);
+        chatTitle.setBackground(Color.LIGHT_GRAY);
+        chatTitle.setOpaque(true);
+        chatBox.add(chatTitle, BorderLayout.NORTH);
+
+        JTextField cField = new JTextField(10);
+        JButton cButton = new JButton("Send");
+        cButton.addActionListener(e -> {
+            String in = cField.getText();
+            if (!in.equals("")) textMessages.add(main.player.getName() + ": " + in);
+            cField.setText("");
+        });
+
+        JPanel chatSend = new JPanel(new FlowLayout());
+
+        chatSend.add(cField);
+        chatSend.add(cButton);
+
+        chatBox.add(chatSend, BorderLayout.SOUTH);
+
+        chatArea.add(chatBox);
+
+        JTextArea chat = new JTextArea();
+        chat.setEditable(false);
+        chat.setLineWrap(false);
+        chat.setWrapStyleWord(true);
+
+        JScrollPane scrollChat = new JScrollPane(chat);
+
+        chatBox.add(scrollChat, BorderLayout.CENTER);
         
-        JPanel sideContainer = new JPanel(new FlowLayout(FlowLayout.LEFT, 0, 20));
+        
+        JPanel sideContainer = new JPanel(new FlowLayout(FlowLayout.LEFT, 5, 20));
         sideContainer.add(leftPanel);
         sideContainer.setBackground(new Color(230, 230, 250));
+        
 
         gameRoom.add(sideContainer, BorderLayout.WEST);
         gameRoom.add(chatArea, BorderLayout.CENTER);
@@ -104,6 +166,11 @@ public class Main extends JPanel {
 
 
             //Client displays the results
+            chat.setText("");
+            for (String s : textMessages) {
+                chat.append(s + "\n");
+            }
+
             SwingUtilities.invokeLater(() -> main.repaint());
 
             
@@ -143,4 +210,21 @@ public class Main extends JPanel {
 
     }
 
+    public static JButton getColorButton(Color c, Board b) {
+            JButton but = new JButton();
+            but.setBackground(c);
+
+            but.addActionListener(new ActionListener() {
+                public void actionPerformed(ActionEvent e) {
+                    b.changeColor(c);
+                }
+            });
+
+            but.setPreferredSize(new Dimension(20,20));
+
+            return but;
+    }
+
 }
+
+

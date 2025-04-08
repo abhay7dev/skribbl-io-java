@@ -56,8 +56,8 @@ public class Board extends JPanel {
 
         Graphics2D g2d = (Graphics2D) g;
         g2d.setStroke(new BasicStroke(3));
-        g2d.setColor(color);
         for (Line l : Board.getLines()) {
+            g2d.setColor(l.color);
             g2d.drawLine(l.startX, l.startY, l.endX, l.endY);
         }
 

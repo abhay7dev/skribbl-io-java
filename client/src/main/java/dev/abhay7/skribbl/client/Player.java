@@ -7,13 +7,14 @@ import javax.swing.*;
 public class Player extends JPanel implements MouseMotionListener, MouseListener {
     String playerState;
     Board board;
+    String playerName;
 
     private int mouseX;
     private int mouseY;
     private boolean mouseDown;
 
     
-    public Player(String playerState) {
+    public Player(String playerState, String name) {
         this.playerState = playerState;
         
         // Register MouseListener and MouseMotionListener
@@ -23,6 +24,8 @@ public class Player extends JPanel implements MouseMotionListener, MouseListener
         // Ensure component is focusable to receive mouse events
         this.setFocusable(true);
         this.requestFocus();
+
+        this.playerName = name;
     }
 
     public void changePlayerState(String p) {
@@ -43,6 +46,10 @@ public class Player extends JPanel implements MouseMotionListener, MouseListener
 
     public boolean getMouseDown() {
         return mouseDown;
+    }
+
+    public String getName() {
+        return playerName;
     }
 
     @Override
