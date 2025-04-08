@@ -13,6 +13,7 @@ public class Board extends JPanel {
     private int prevMousex = 0;
     private int prevMousey = 0;
 
+
     Color color;
     
     //this will be updated to more than lines LATER - for now im keeping it simple
@@ -22,16 +23,6 @@ public class Board extends JPanel {
         drawings = new ArrayList<>();
         currPlayer = p;
         color = Color.black;
-    }
-
-    public void serialize() {
-        try (FileOutputStream fileOut = new FileOutputStream("board-data.ser");
-        ObjectOutputStream out = new ObjectOutputStream(fileOut)) {
-            out.writeObject(this);
-        }
-        catch(Exception e) {
-            System.out.print("Serialization Failed");
-        }
     }
 
     public void setCurrPlayer(Player player) {

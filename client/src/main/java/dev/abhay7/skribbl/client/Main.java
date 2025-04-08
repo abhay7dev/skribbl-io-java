@@ -29,7 +29,10 @@ public class Main extends JPanel {
         //FlatIntelliJLaf.registerCustomDefaultsSource("style");
         FlatIntelliJLaf.setup();
 
-        //THE CLIENT SHOULD ADD MESSAGES ITSELF AND ADD A NEW STRING EVERYTIME IT GETS A CHAT MESSAGE
+        /*THE CLIENT SHOULD ADD MESSAGES ITSELF AND ADD A NEW STRING EVERYTIME IT GETS A CHAT MESSAGE
+         *
+         * GRAY OUT CHAT MESSAGES
+         */
         ArrayList<String> textMessages = new ArrayList<String>();
 
         Border border = BorderFactory.createLineBorder(Color.black);
@@ -57,7 +60,7 @@ public class Main extends JPanel {
         JPanel drawingMenu = new JPanel(new FlowLayout());
         drawingMenu.setBackground(Color.WHITE);
         drawingMenu.setPreferredSize(new Dimension(
-            (int) (width * 0.55), // 25% width of the frame
+            (int) (width * 0.65), // 25% width of the frame
             (int) (height * 0.15) // 25% height of the frame
         ));
 
@@ -74,8 +77,8 @@ public class Main extends JPanel {
         
 
         board.setPreferredSize(new Dimension(
-            (int) (width * 0.55),
-            (int) (height * 0.45) 
+            (int) (width * 0.65),
+            (int) (height * 0.70) 
         ));
         
         JLabel word = new JLabel("loading", SwingConstants.CENTER);
@@ -107,8 +110,8 @@ public class Main extends JPanel {
 
         JPanel chatBox = new JPanel(new BorderLayout());
         chatBox.setPreferredSize(new Dimension(
-            (int) (width * 0.20), // 25% width of the frame
-            (int) (height * 0.60) // 25% height of the frame
+            (int) (width * 0.30), // 25% width of the frame
+            (int) (height * 0.90) // 25% height of the frame
         ));
         chatBox.setBorder(border);
         chatBox.setBackground(Color.WHITE);
