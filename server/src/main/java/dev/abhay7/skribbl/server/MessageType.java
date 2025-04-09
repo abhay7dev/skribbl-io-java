@@ -1,0 +1,11 @@
+package dev.abhay7.skribbl.server;
+
+public enum MessageType {
+    SERVER_VERIFICATION_REQUEST,
+    CLIENT_VERIFICATION_REQUEST,
+    PING_REQUEST,
+    GAME_DATA,
+    LOBBY_CONNECT_REQUEST,
+    LOBBY_DISCONNECT,
+    SERVER_DISCONNECT
+}
