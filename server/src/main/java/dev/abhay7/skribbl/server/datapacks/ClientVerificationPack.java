@@ -12,4 +12,6 @@ public class ClientVerificationPack extends DataPackage {
         return this.verificationString;
     }
 
+    public String toString() { return this.getVerificationString(); }
+
 }

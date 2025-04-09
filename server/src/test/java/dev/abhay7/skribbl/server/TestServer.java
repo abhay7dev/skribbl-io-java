@@ -20,6 +20,8 @@ public class TestServer {
         ObjectOutputStream writer = new ObjectOutputStream(s.getOutputStream());
         ObjectInputStream reader = new ObjectInputStream(s.getInputStream());
 
+        System.out.println("Testing server connectivity");
+
         new Thread(() -> {
 
             try {
@@ -43,6 +45,18 @@ public class TestServer {
 
         System.out.println("Waiting for 10 seconds until test is done.");
         Thread.sleep(10000);
+
+        ClientVerificationPack newCVP = new ClientVerificationPack("_VERIFIEDCONNECTION");
+
+        writer.writeObject(newCVP);
+        writer.flush();
+
+        Thread.sleep(500);
+
+        writer.writeObject(newCVP);
+        writer.flush();
+
+        Thread.sleep(2000);
 
         s.close();
 
