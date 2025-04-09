@@ -22,3 +22,15 @@ jar {
         )
     }
 }
+
+repositories {
+    mavenCentral()
+}
+
+dependencies {
+    implementation 'org.junit.jupiter:junit-jupiter:5.10.0' // Or latest version
+}
+
+test {
+    useJUnitPlatform()
+}

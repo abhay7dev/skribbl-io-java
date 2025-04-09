@@ -20,10 +20,10 @@ public class Server {
         try {
             serverSocket = new ServerSocket(PORT);
             isRunning = true;
+            System.out.println("Skribbl Server running on port " + PORT + "!");
         } catch (Exception e) {
             System.err.println("Fatal Error. Failed to open ServerSocket on port " + PORT + "\n" + e);
         }
-        System.out.println("Skribbl Server running on port " + PORT + "!");
         runServer();
     }
 
@@ -87,8 +87,10 @@ public class Server {
                 ClientVerificationPack responseVerification = (ClientVerificationPack) this.reader.readObject();
 
                 if(!responseVerification.getVerificationString().equals(cvp.getVerificationString() + verifyString)) throw new Exception("Invalid verification response");
-                else this.verified = true;
-
+                else {
+                    System.out.println("Client successfully verified");
+                    this.verified = true;
+                }
             } catch(Exception ste) {
                 System.out.println("A client failed to respond to verification packet in time, will be removed.");
                 ste.printStackTrace();
@@ -103,6 +105,8 @@ public class Server {
 
         private void disconnectAndTerminateUser() {
             try {
+                this.writer.close();
+                this.reader.close();
                 this.clientSocket.close();
                 if(this.thisRunnableWrapper != null) {
                     connectedClientList.remove(this.thisRunnableWrapper);

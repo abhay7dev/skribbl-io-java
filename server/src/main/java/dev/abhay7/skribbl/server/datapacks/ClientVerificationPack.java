@@ -1,7 +1,5 @@
 package dev.abhay7.skribbl.server.datapacks;
 
-import dev.abhay7.skribbl.server.DataPackage;
-
 public class ClientVerificationPack extends DataPackage {
 
     private String verificationString;
