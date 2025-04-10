@@ -4,7 +4,7 @@ public class Main {
 
     public static void main(String... args) {
         
-        int PORT = 80;
+        int PORT = 8080;
 
         if(args.length == 1) {
             if(args[0].equals("--help")) System.out.println("Use --port <PORT> to specify port to run on. Runs on port 80 by default.");

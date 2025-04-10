@@ -1,29 +1,31 @@
 package dev.abhay7.skribbl.server;
 
+import java.io.EOFException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.net.ServerSocket;
 import java.net.Socket;
-import java.util.HashSet;
-import java.util.Set;
+import java.util.concurrent.CopyOnWriteArrayList;
 
 import dev.abhay7.skribbl.server.datapacks.ClientVerificationPack;
+import dev.abhay7.skribbl.server.datapacks.DataPackage;
 
 public class Server {
 
     private ServerSocket serverSocket;
     private boolean isRunning;
 
-    private Set<Thread> connectedClientList = new HashSet<Thread>();
+    private CopyOnWriteArrayList<Thread> connectedClientList = new CopyOnWriteArrayList<Thread>();
+    private CopyOnWriteArrayList<ClientCommsHandler> connectedClientListRunnables = new CopyOnWriteArrayList<ClientCommsHandler>();
 
     public Server(int PORT) {
         try {
             serverSocket = new ServerSocket(PORT);
             isRunning = true;
+            System.out.println("Skribbl Server running on port " + PORT + "!");
         } catch (Exception e) {
             System.err.println("Fatal Error. Failed to open ServerSocket on port " + PORT + "\n" + e);
         }
-        System.out.println("Skribbl Server running on port " + PORT + "!");
         runServer();
     }
 
@@ -48,8 +50,9 @@ public class Server {
                 ClientCommsHandler cch = new ClientCommsHandler(clientSocket, writer, reader);
                 Thread userThread = new Thread(cch);
                 cch.setThisRunnableWrapper(userThread);
-                userThread.start();
+                connectedClientListRunnables.add(cch);
                 connectedClientList.add(userThread);
+                userThread.start();
             }
 
         }
@@ -87,11 +90,29 @@ public class Server {
                 ClientVerificationPack responseVerification = (ClientVerificationPack) this.reader.readObject();
 
                 if(!responseVerification.getVerificationString().equals(cvp.getVerificationString() + verifyString)) throw new Exception("Invalid verification response");
-                else this.verified = true;
+                else {
+                    System.out.println("Client successfully verified");
+                    this.verified = true;
+                }
 
             } catch(Exception ste) {
                 System.out.println("A client failed to respond to verification packet in time, will be removed.");
-                ste.printStackTrace();
+                this.disconnectAndTerminateUser();
+            }
+
+            DataPackage receivedClientData;
+            
+            try {
+                
+                while(((receivedClientData = (DataPackage) reader.readObject())) != null) {
+                    handleDataPackage(receivedClientData);
+                }
+
+            } catch(EOFException e) {
+                System.out.println("Client socket disconnected");
+            } catch(Exception e) {
+                System.out.println("Error in recieving client data: " + e);
+            } finally {
                 this.disconnectAndTerminateUser();
             }
 
@@ -103,9 +124,12 @@ public class Server {
 
         private void disconnectAndTerminateUser() {
             try {
+                this.writer.close();
+                this.reader.close();
                 this.clientSocket.close();
                 if(this.thisRunnableWrapper != null) {
                     connectedClientList.remove(this.thisRunnableWrapper);
+                    connectedClientListRunnables.remove(this);
                     thisRunnableWrapper.join();
                 }
             } catch(Exception e) {
@@ -113,6 +137,10 @@ public class Server {
             }
         }
 
+    }
+
+    private void handleDataPackage(DataPackage dataPackage) {
+        System.out.println("Received Data Package: " + dataPackage);
     }
 
 }

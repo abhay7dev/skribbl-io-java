@@ -1,7 +1,5 @@
 package dev.abhay7.skribbl.server.datapacks;
 
-import dev.abhay7.skribbl.server.DataPackage;
-
 public class ClientVerificationPack extends DataPackage {
 
     private String verificationString;
@@ -13,5 +11,7 @@ public class ClientVerificationPack extends DataPackage {
     public String getVerificationString() {
         return this.verificationString;
     }
+
+    public String toString() { return this.getVerificationString(); }
 
 }

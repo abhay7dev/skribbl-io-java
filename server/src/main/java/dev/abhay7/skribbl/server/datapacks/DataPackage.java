@@ -1,4 +1,4 @@
-package dev.abhay7.skribbl.server;
+package dev.abhay7.skribbl.server.datapacks;
 
 import java.io.Serializable;
 
