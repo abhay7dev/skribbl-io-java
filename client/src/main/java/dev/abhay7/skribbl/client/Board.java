@@ -2,6 +2,7 @@ package dev.abhay7.skribbl.client;
 
 import javax.swing.*;
 import java.awt.*;
+import java.awt.image.BufferedImage;
 // import java.io.FileOutputStream;
 // import java.io.ObjectOutputStream;
 //import java.io.Serializable;
@@ -13,16 +14,18 @@ public class Board extends JPanel {
     private int prevMousex = 0;
     private int prevMousey = 0;
 
+    BufferedImage im;
 
     Color color;
     
     //this will be updated to more than lines LATER - for now im keeping it simple
     private static ArrayList<Line> drawings;
 
-    public Board(Player p) {
+    public Board(Player p, int w, int h) {
         drawings = new ArrayList<>();
         currPlayer = p;
         color = Color.black;
+        im = new BufferedImage(w, h, BufferedImage.TYPE_INT_RGB);
     }
 
     public void setCurrPlayer(Player player) {
@@ -45,7 +48,10 @@ public class Board extends JPanel {
             drawings.add(new Line(prevMousex, prevMousey-20, currX, currY-20, color));
         }
 
-        Graphics2D g2d = (Graphics2D) g;
+        
+        Graphics2D g2d = im.createGraphics();
+        g2d.setColor(Color.WHITE);
+        g2d.fillRect(0, 0, (int)(1280 * 0.55), (int)(720 * 0.70));
         g2d.setStroke(new BasicStroke(3));
         for (Line l : Board.getLines()) {
             g2d.setColor(l.color);
@@ -58,5 +64,13 @@ public class Board extends JPanel {
 
     public static ArrayList<Line> getLines() {
         return drawings;
+    }
+
+    public static void delLines() {
+        drawings.clear();
+    }
+
+    public BufferedImage getDrawing() {
+        return im;
     }
 }

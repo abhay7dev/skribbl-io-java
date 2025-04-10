@@ -19,9 +19,14 @@ public class Main extends JPanel {
     Player player; //eventually the server should decide what the player's initial state is
     Board board;  // change this to the server sends the starting board over to the client
 
+    static int width = 1280;
+    static int height = 720;
+
+    static ArrayList<String> words = new ArrayList<String>();
+
     public Main() {
         player = new Player("drawing", "myguy");
-        board = new Board(player);
+        board = new Board(player, (int) (1280 * 0.55), (int) (height * 0.70));
     }
 
     public static void main(String... args) throws InterruptedException, FileNotFoundException {
@@ -43,12 +48,10 @@ public class Main extends JPanel {
         Main main = new Main();
         JFrame frame = new JFrame("Skribbl 2");
         frame.getContentPane().setBackground(new Color(0, 0, 0, 0));
-        int width = 1280;
-        int height = 720;
+        
         frame.setSize(width, height);
         frame.setLocationRelativeTo(null);
         frame.setLayout(new BorderLayout());
-        frame.setVisible(true);
         frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
 
         JPanel gameRoom = new JPanel(new BorderLayout());
@@ -62,7 +65,7 @@ public class Main extends JPanel {
         JPanel drawingMenu = new JPanel(new FlowLayout());
         drawingMenu.setBackground(Color.WHITE);
         drawingMenu.setPreferredSize(new Dimension(
-            (int) (width * 0.65), // 25% width of the frame
+            (int) (width * 0.55), // 25% width of the frame
             (int) (height * 0.15) // 25% height of the frame
         ));
 
@@ -76,10 +79,19 @@ public class Main extends JPanel {
         drawingMenu.add(getColorButton(Color.YELLOW, main.board));
         drawingMenu.add(getColorButton(Color.MAGENTA, main.board));
         drawingMenu.add(getColorButton(Color.CYAN, main.board));
+
+        JButton clearButton = new JButton("Clear");
+        clearButton.addActionListener(new ActionListener() {
+            public void actionPerformed(ActionEvent e) {
+                Board.delLines();
+            }
+        });
+
+        drawingMenu.add(clearButton);
         
 
         board.setPreferredSize(new Dimension(
-            (int) (width * 0.65),
+            (int) (width * 0.55),
             (int) (height * 0.70) 
         ));
         
@@ -158,8 +170,31 @@ public class Main extends JPanel {
         gameRoom.add(sideContainer, BorderLayout.WEST);
         gameRoom.add(chatArea, BorderLayout.CENTER);
 
+        JFrame serverList = new JFrame("Server List");
+        serverList.setVisible(true);
+        serverList.setSize(width, height);
+
+        JLabel sTitle = new JLabel("Server List");
+
+        JPanel serverListPanel = new JPanel();
+        serverListPanel.setLayout(new BoxLayout(serverListPanel, BoxLayout.Y_AXIS));
+
+        //create an arrayLIST FOR THE PANELS REFRESH IT
+
+        for (int i = 1; i <= 5; i++) {
+            serverListPanel.add(createServerM("Server " + i, "public", frame, serverList));
+        }
+
+        JScrollPane scrollPane = new JScrollPane(serverListPanel);
+        scrollPane.getVerticalScrollBar().setUnitIncrement(16);
 
 
+
+        serverList.add(sTitle, BorderLayout.NORTH);
+        serverList.add(scrollPane);
+        
+
+        frame.setVisible(false);
         frame.setResizable(true);
         frame.add(gameRoom);
 
@@ -191,10 +226,11 @@ public class Main extends JPanel {
     public void paintComponent(Graphics g) {
 
         g.setColor(Color.WHITE);
-        g.fillRect(0,0,(int)(1920 * 0.55), (int)(1080 * 0.55));
+        g.fillRect(0,0,(int)(1280 * 0.55), (int)(720 * 0.55));
 
         //super.paintComponent(g);
-        board.paintComponent(g);        
+        board.paintComponent(g);
+        g.drawImage(board.getDrawing(), 0, 0, null);        
     }
 
     public static String getAWord() {
@@ -230,6 +266,51 @@ public class Main extends JPanel {
             but.setPreferredSize(new Dimension(20,20));
 
             return but;
+    }
+
+    public static JPanel createServerM(String name, String sType, JFrame cFrame, JFrame jFrame) {
+        JPanel sEntry = new JPanel(new BorderLayout());
+        sEntry.setMaximumSize(new Dimension(1000, 60));
+        sEntry.setBorder(BorderFactory.createLineBorder(Color.BLACK));
+
+        JLabel nameLabel = new JLabel(name);
+        JButton joinButton = new JButton("Join Server");
+
+        joinButton.addActionListener(e -> {
+            boolean in = true;
+
+            if (sType.equals("protected")) {
+                in = false;
+                JPasswordField passwordField = new JPasswordField();
+                int option = JOptionPane.showConfirmDialog(
+                    sEntry, 
+                    passwordField, 
+                    "Enter Password", 
+                    JOptionPane.OK_CANCEL_OPTION,
+                    JOptionPane.PLAIN_MESSAGE
+                );
+
+                if (option == JOptionPane.OK_OPTION) {
+                    //VALIDATE PASSWORD. HOW???? IDK
+                    in = true;
+                }
+            }
+
+            if (in) {
+                //server joining code
+                cFrame.setVisible(true);
+                jFrame.setVisible(false);
+            }
+            
+        });
+
+        JPanel textPanel = new JPanel(new GridLayout(2, 1));
+        textPanel.add(nameLabel);
+
+        sEntry.add(textPanel, BorderLayout.CENTER);
+        sEntry.add(joinButton, BorderLayout.EAST);
+
+        return sEntry;
     }
 
 }
