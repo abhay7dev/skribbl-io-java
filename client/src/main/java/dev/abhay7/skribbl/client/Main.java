@@ -292,6 +292,16 @@ public class Main extends JPanel {
 
                 if (option == JOptionPane.OK_OPTION) {
                     //VALIDATE PASSWORD. HOW???? IDK
+                    // I have an idea. Obviously, the client needs to receive data.
+                    // When it receives a game packet that it knows it needs to interpret as encrypted data,
+                    // it wants to decrypt it. With AES GCM, that decryptiojn only suceedes if the key is correctg
+                    // Thus, when we have an inpersonating server (sending garbage data to the client), we fail to decrypt it and pop up a warning
+                    // inidicating that EITHER the password is incorrect or the server isn't who they claim to be
+                    // In either case, the symptoms are identical--and indeed, the sickness is, too
+                    // Thus, wehnever a client accepts the connection, the server sends some initial packet to the client
+                    // Which i believe abhay has already implemented
+                    // The client is a state machine -- it waits for this packet before any more work can be done
+                    // If it fails to decyrpt this initial packet, then boom, either the password is wrong or fake server.
                     in = true;
                 }
             }
