@@ -11,6 +11,9 @@ import java.util.*;
 import java.io.*;
 
 import java.lang.Thread;
+import java.net.URI;
+import java.net.URISyntaxException;
+import java.net.URL;
 
 import com.formdev.flatlaf.*;
 
@@ -22,16 +25,26 @@ public class Main extends JPanel {
     static int width = 1280;
     static int height = 720;
 
+    String PORT;
+
     static ArrayList<String> words = new ArrayList<String>();
+
+    static ArrayList<Player> playerList = new ArrayList<>();
 
     public Main() {
         player = new Player("drawing", "myguy");
         board = new Board(player, (int) (1280 * 0.55), (int) (height * 0.70));
+
+        //TEMP CODE - change code for fetching player
+        playerList.add(new Player("chatting", "Jeffery"));
+        playerList.add(new Player("chatting", "Lalalalala"));
+        playerList.add(new Player("chatting", "Lebron James"));
     }
 
-    public static void main(String... args) throws InterruptedException, FileNotFoundException {
+    public static void main(String... args) throws InterruptedException, FileNotFoundException, URISyntaxException {
         // System.out.println("Working Directory = " + System.getProperty("user.dir"));
 
+        words = getWordList();
         
         //FlatIntelliJLaf.registerCustomDefaultsSource("style");
         FlatIntelliJLaf.setup();
@@ -53,6 +66,7 @@ public class Main extends JPanel {
         frame.setLocationRelativeTo(null);
         frame.setLayout(new BorderLayout());
         frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+        frame.setBackground(new Color(230,230,250));
 
         JPanel gameRoom = new JPanel(new BorderLayout());
 
@@ -104,7 +118,7 @@ public class Main extends JPanel {
 
         //helps deal with the EDT
         new Thread(() -> {
-            String actualWord = getAWord();
+            String actualWord = getAWord(words);
         
             SwingUtilities.invokeLater(() -> word.setText(actualWord));
         }).start();
@@ -125,7 +139,7 @@ public class Main extends JPanel {
         JPanel chatBox = new JPanel(new BorderLayout());
         chatBox.setPreferredSize(new Dimension(
             (int) (width * 0.30), // 25% width of the frame
-            (int) (height * 0.90) // 25% height of the frame
+            (int) (height * 0.60) // 25% height of the frame
         ));
         chatBox.setBorder(border);
         chatBox.setBackground(Color.WHITE);
@@ -150,8 +164,6 @@ public class Main extends JPanel {
 
         chatBox.add(chatSend, BorderLayout.SOUTH);
 
-        chatArea.add(chatBox);
-
         JTextArea chat = new JTextArea();
         chat.setEditable(false);
         chat.setLineWrap(false);
@@ -161,6 +173,19 @@ public class Main extends JPanel {
 
         chatBox.add(scrollChat, BorderLayout.CENTER);
         
+        chatArea.add(chatBox);
+
+        JPanel j = new JPanel();
+        j.setLayout(new BoxLayout(j, BoxLayout.Y_AXIS));
+        j.setPreferredSize(new Dimension(200,200));
+        j.setBackground(Color.WHITE);
+        j.setBorder(border);
+        j.add(new JLabel("PLAYER LIST"));
+        for (Player p : playerList) {
+            j.add(new JLabel(p.playerName));
+
+            chatArea.add(j);
+        }
         
         JPanel sideContainer = new JPanel(new FlowLayout(FlowLayout.LEFT, 5, 20));
         sideContainer.add(leftPanel);
@@ -170,8 +195,8 @@ public class Main extends JPanel {
         gameRoom.add(sideContainer, BorderLayout.WEST);
         gameRoom.add(chatArea, BorderLayout.CENTER);
 
-        JFrame serverList = new JFrame("Server List");
-        serverList.setVisible(true);
+        JFrame serverList = new JFrame("Lobby List");
+        serverList.setVisible(false);
         serverList.setSize(width, height);
 
         JLabel sTitle = new JLabel("Server List");
@@ -179,10 +204,27 @@ public class Main extends JPanel {
         JPanel serverListPanel = new JPanel();
         serverListPanel.setLayout(new BoxLayout(serverListPanel, BoxLayout.Y_AXIS));
 
+        JFrame portInput = new JFrame("SeverIP");
+        portInput.setLayout(new FlowLayout());
+        portInput.setVisible(true);
+        portInput.setSize(200, 80);
+
+
+        JTextField portInputBox = new JTextField(7);
+        JButton pButton = new JButton("Confirm");
+        pButton.addActionListener(e -> {
+            main.PORT = portInputBox.getText();
+            portInput.setVisible(false);
+            serverList.setVisible(true);
+        });
+
+        portInput.add(portInputBox);
+        portInput.add(pButton);
+
         //create an arrayLIST FOR THE PANELS REFRESH IT
 
         for (int i = 1; i <= 5; i++) {
-            serverListPanel.add(createServerM("Server " + i, "public", frame, serverList));
+            serverListPanel.add(createServerM("Lobby " + i, "public", frame, serverList));
         }
 
         JScrollPane scrollPane = new JScrollPane(serverListPanel);
@@ -233,24 +275,32 @@ public class Main extends JPanel {
         g.drawImage(board.getDrawing(), 0, 0, null);        
     }
 
-    public static String getAWord() {
-        ArrayList<String> words = new ArrayList<String>();
-        // try {
-        //     Scanner sc = new Scanner(new File("src/main/resources/worddata.txt"));
-        //     // Scanner sc = new Scanner(new File("client/src/main/java/dev/abhay7/skribbl/client/worddata.txt"));
-        //     while (sc.hasNext()) {
-        //         String word = sc.next();
-        //         words.add(word.substring(0,word.length()-1));
-        //     }
-        //     sc.close();
-        // }
-        // catch (Exception e) {
-        //     System.out.println(e);
-        // }
-        words.add("hello");
-
+    public static String getAWord(ArrayList<String> words) {
         return words.get((int) (Math.random() * words.size()));
 
+    }
+
+    public static ArrayList<String> getWordList() throws URISyntaxException {
+        ArrayList<String> words = new ArrayList<>();
+        try {
+            // Create URL object
+            URL url = new URI("https://gist.githubusercontent.com/mvark/9e0682c62d75625441f6ded366245203/raw/aec8a476a210db88086c50d3735507510ea295f2/Skribbl-words.csv").toURL();
+            BufferedReader reader = new BufferedReader(new InputStreamReader(url.openStream()));
+            String line;
+
+            reader.readLine();
+
+            // Read each line in the CSV file
+            while ((line = reader.readLine()) != null) {
+                words.add(line.split(",")[0]);  // Add each word to the list
+            }
+
+            reader.close();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+
+        return words;
     }
 
     public static JButton getColorButton(Color c, Board b) {
