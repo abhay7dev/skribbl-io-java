@@ -198,11 +198,14 @@ public class Main extends JPanel {
         JFrame serverList = new JFrame("Lobby List");
         serverList.setVisible(false);
         serverList.setSize(width, height);
+        serverList.getContentPane().setBackground(new Color(230, 230, 250));
 
-        JLabel sTitle = new JLabel("Server List");
+        JLabel sTitle = new JLabel("Server List", SwingConstants.CENTER);
+        sTitle.setFont(new Font("SansSerif", Font.BOLD, 32));
 
         JPanel serverListPanel = new JPanel();
         serverListPanel.setLayout(new BoxLayout(serverListPanel, BoxLayout.Y_AXIS));
+        serverListPanel.setBackground(new Color(230, 230, 250));
 
         JFrame portInput = new JFrame("SeverIP");
         portInput.setLayout(new FlowLayout());
