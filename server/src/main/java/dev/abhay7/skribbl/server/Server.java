@@ -9,6 +9,7 @@ import java.util.concurrent.CopyOnWriteArrayList;
 
 import dev.abhay7.skribbl.server.datapacks.ClientVerificationPack;
 import dev.abhay7.skribbl.server.datapacks.DataPackage;
+import dev.abhay7.skribbl.server.datapacks.LobbyListPack;
 
 public class Server {
 
@@ -18,13 +19,15 @@ public class Server {
     private CopyOnWriteArrayList<Thread> connectedClientList = new CopyOnWriteArrayList<Thread>();
     private CopyOnWriteArrayList<ClientCommsHandler> connectedClientListRunnables = new CopyOnWriteArrayList<ClientCommsHandler>();
 
+    private LobbiesHandler lobbies = new LobbiesHandler();
+
     public Server(int PORT) {
         try {
             serverSocket = new ServerSocket(PORT);
             isRunning = true;
             System.out.println("Skribbl Server running on port " + PORT + "!");
         } catch (Exception e) {
-            System.err.println("Fatal Error. Failed to open ServerSocket on port " + PORT + "\n" + e);
+            System.err.println("Fatal Error. Failed to start Skribbl Server on port " + PORT + "\n" + e);
         }
         runServer();
     }
@@ -93,6 +96,7 @@ public class Server {
                 else {
                     System.out.println("Client successfully verified");
                     this.verified = true;
+                    this.clientSocket.setSoTimeout(0);
                 }
 
             } catch(Exception ste) {
@@ -137,10 +141,23 @@ public class Server {
             }
         }
 
-    }
+        private void handleDataPackage(DataPackage dataPackage) {
+            System.out.println("Received Data Package: " + dataPackage);
+            if(this.verified && dataPackage.isRequest()) {
+                if(dataPackage instanceof LobbyListPack) {
+                    LobbyListPack toSend = new LobbyListPack(lobbies.getLobbyArrayList());
+                    try {
+                        this.writer.writeObject(toSend);
+                        this.writer.flush();
+                        System.out.println("Sent LobbyPack with lobbies list");
+                    } catch(Exception e) {
+                        System.out.println("Failed to send LobbyListPacket to client: " + e);
+                    }
+                }
+            }
+        }
+    
 
-    private void handleDataPackage(DataPackage dataPackage) {
-        System.out.println("Received Data Package: " + dataPackage);
     }
 
 }

@@ -22,42 +22,50 @@ public class TestServer {
 
         System.out.println("Testing server connectivity");
 
-        new Thread(() -> {
+        Thread testing = new Thread(() -> {
 
             try {
                 Object serverResponse;
                 
                 while (((serverResponse = reader.readObject()) != null)) {
                 
-                    ClientVerificationPack cvp = (ClientVerificationPack) serverResponse;
-                    System.out.println("Received cvp: " + cvp.getVerificationString());
-                
-                    ClientVerificationPack newCVP = new ClientVerificationPack(cvp.getVerificationString() + "_VERIFIEDCONNECTION");
+                    if(serverResponse instanceof ClientVerificationPack) {
+                        ClientVerificationPack cvp = (ClientVerificationPack) serverResponse;
+                        System.out.println("Received cvp: " + cvp.getVerificationString());
+                    
+                        ClientVerificationPack newCVP = new ClientVerificationPack(cvp.getVerificationString() + "_VERIFIEDCONNECTION");
 
-                    writer.writeObject(newCVP);
-                    writer.flush();
+                        writer.writeObject(newCVP);
+                        writer.flush();
+                        System.out.println("Sent new CVP");
+
+                        writer.writeObject(new LobbyListPack());
+                        writer.flush();
+                    } else if(serverResponse instanceof LobbyListPack) {
+                        System.out.println("Received lobbylist pack");
+                        LobbyListPack l = (LobbyListPack) serverResponse;
+                        l.getLobbies().forEach((lob) -> {
+                            System.out.println(lob[0] + "; Private - " + lob[1]);
+                        });
+                        break;
+                    } else {
+                        System.out.println("Received unknown datapack");
+                    }
 
                 }
             } catch (Exception e) {
                 e.printStackTrace();
             }
-        }).start();
+        });
+        testing.start();
 
-        System.out.println("Waiting for 10 seconds until test is done.");
+        System.out.println("Waiting for 10 seconds before ending program");
+
         Thread.sleep(10000);
+        testing.join();
 
-        ClientVerificationPack newCVP = new ClientVerificationPack("_VERIFIEDCONNECTION");
-
-        writer.writeObject(newCVP);
-        writer.flush();
-
-        Thread.sleep(500);
-
-        writer.writeObject(newCVP);
-        writer.flush();
-
-        Thread.sleep(2000);
-
+        writer.close();
+        reader.close();
         s.close();
 
     }

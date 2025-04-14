@@ -4,8 +4,13 @@ public class ClientVerificationPack extends DataPackage {
 
     private String verificationString;
 
-    public ClientVerificationPack(String vs) {
+    public ClientVerificationPack(boolean isRequest, String vs) {
+        super(isRequest);
         this.verificationString = vs;
+    }
+
+    public ClientVerificationPack(String vs) {
+        this(false, vs);
     }
 
     public String getVerificationString() {
