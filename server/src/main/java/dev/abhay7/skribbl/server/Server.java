@@ -73,7 +73,7 @@ public class Server {
         private Thread thisRunnableWrapper;
 
         private boolean verified = false;
-        private boolean isInLobby = false;
+        private boolean inLobby = false;
         private String socketId = "";
         private String username = "";
 
@@ -170,6 +170,7 @@ public class Server {
                         this.username = p.getUsername();
                         lob = new Lobby(p, this);
                         lobbies.addLobby(lob);
+                        this.inLobby = true;
                         this.writer.writeObject(new LobbyInitPack(true));
                         this.writer.flush();
                     } catch(IllegalArgumentException iae) {
@@ -197,6 +198,7 @@ public class Server {
                         try {
                             this.writer.writeObject(new JoinLobbyPack(true, lob.getPlayerNames()));
                             lob.addClient(this);
+                            this.inLobby = true;
                             this.writer.flush();
 
                             System.out.println("Notifying all except sender (" + this.username + ")");
@@ -228,6 +230,8 @@ public class Server {
         }
 
         protected String getUsername() { return this.username; }
+        protected String getId() { return this.socketId; }
+        protected boolean isInLobby() { return this.inLobby; }
 
     }
 

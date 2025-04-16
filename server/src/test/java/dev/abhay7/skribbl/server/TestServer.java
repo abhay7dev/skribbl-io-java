@@ -118,12 +118,15 @@ public class TestServer {
         }
 
         public void run() {
+            Socket s = null;
+            ObjectOutputStream writer = null;
+            ObjectInputStream reader = null;
             try {
                 boolean isInLobby = false;
-                Socket s = new Socket(inetadd, PORT);
+                s = new Socket(inetadd, PORT);
 
-                ObjectOutputStream writer = new ObjectOutputStream(s.getOutputStream());
-                ObjectInputStream reader = new ObjectInputStream(s.getInputStream());
+                writer = new ObjectOutputStream(s.getOutputStream());
+                reader = new ObjectInputStream(s.getInputStream());
 
                 Object serverResponse;
                 ArrayList<String> users = new ArrayList<>();
@@ -192,6 +195,9 @@ public class TestServer {
                     }
 
                 }
+                writer.close();
+                reader.close();
+                s.close();
             } catch (EOFException e) {
                 System.out.println(name + ":  EOFException: Disconnected");
             } catch (Exception e) {
