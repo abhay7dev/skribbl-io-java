@@ -28,5 +28,6 @@ public class JoinLobbyPack extends DataPackage {
     public String getLobbyName() { return this.lobbyName; }
     public String getUsername() { return this.username; }
     public boolean isSuccess() { return this.success; }
+    public java.util.ArrayList<String> getPlayers() { return this.players; }
     
 }

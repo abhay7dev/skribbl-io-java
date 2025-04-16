@@ -6,6 +6,7 @@ import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.net.ServerSocket;
 import java.net.Socket;
+import java.net.SocketTimeoutException;
 import java.util.concurrent.CopyOnWriteArrayList;
 
 import dev.abhay7.skribbl.server.datapacks.ClientVerificationPack;
@@ -102,7 +103,7 @@ public class Server {
                 else {
                     System.out.println("Client successfully verified");
                     this.verified = true;
-                    this.clientSocket.setSoTimeout(10000);
+                    this.clientSocket.setSoTimeout(waittime * 3);
                 }
 
             } catch(Exception ste) {
@@ -120,6 +121,8 @@ public class Server {
 
             } catch(EOFException e) {
                 System.out.println("Client socket disconnected");
+            } catch(SocketTimeoutException e) {
+                System.out.println("Client socket timed out");
             } catch(Exception e) {
                 System.out.println("Error in recieving client data: " + e);
             } finally {
@@ -163,6 +166,8 @@ public class Server {
                     LobbyInitPack p = (LobbyInitPack) dataPackage;
                     Lobby lob = null;
                     try {
+                        if(p.getUsername().equals(null)) throw new IllegalArgumentException();
+                        this.username = p.getUsername();
                         lob = new Lobby(p, this);
                         lobbies.addLobby(lob);
                         this.writer.writeObject(new LobbyInitPack(true));
@@ -190,11 +195,13 @@ public class Server {
                     if(lob != null) {
 
                         try {
-                            lob.addClient(this);
                             this.writer.writeObject(new JoinLobbyPack(true, lob.getPlayerNames()));
+                            lob.addClient(this);
                             this.writer.flush();
 
+                            System.out.println("Notifying all except sender (" + this.username + ")");
                             lob.notifyAllExceptSender(dataPackage, this);
+
                         } catch(Exception e) {
                             System.out.println("Failed to notify about joining lobby");
                         }
@@ -211,11 +218,13 @@ public class Server {
             }
         }
     
-        protected void sendPackage(DataPackage dp) throws IOException {
-
-            writer.writeObject(dp);
-            writer.flush();
-            
+        protected void sendPackage(DataPackage dp) throws IOException, IllegalAccessError {
+            if(this.writer != null) {
+                writer.writeObject(dp);
+                writer.flush();
+            } else {
+                throw new IllegalAccessError("Attempted to access disconnected socket");
+            }            
         }
 
         protected String getUsername() { return this.username; }

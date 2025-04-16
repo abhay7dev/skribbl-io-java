@@ -49,7 +49,11 @@ public class Lobby {
 
     public void notifyAllExceptSender(DataPackage dp, Server.ClientCommsHandler sender) throws IOException {
         for(Server.ClientCommsHandler cch: this.clients) {
-            if(!cch.equals(sender)) cch.sendPackage(dp);
+            try {
+                if(!cch.equals(sender)) cch.sendPackage(dp);
+            } catch(IllegalAccessError iae) {
+                this.clients.remove(cch);
+            }
         }
     }
 
