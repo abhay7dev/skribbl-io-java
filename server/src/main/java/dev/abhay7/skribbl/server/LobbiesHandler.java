@@ -6,17 +6,50 @@ import java.util.concurrent.CopyOnWriteArrayList;
 public class LobbiesHandler {
 
     private CopyOnWriteArrayList<Lobby> lobbiesList;
+    private CopyOnWriteArrayList<Lobby> lobbiesListPriv;
 
     public LobbiesHandler() {
         lobbiesList = new CopyOnWriteArrayList<Lobby>();
+        lobbiesListPriv = new CopyOnWriteArrayList<Lobby>();
     }
 
     public ArrayList<Lobby> getLobbyArrayList() {
         return new ArrayList<Lobby>(lobbiesList);
     }
 
-    public void addLobby(Lobby nLob) {
-        lobbiesList.add(nLob);
+    public void addLobby(Lobby nLob) throws IllegalArgumentException {
+        if(isLobbyNameAvailable(nLob)) {
+            if(nLob.isPrivate()) lobbiesListPriv.add(nLob);
+            else lobbiesList.add(nLob);
+        } else {
+            throw new IllegalArgumentException("Lobby name: " + nLob.getName() + " already taken.");
+        }
+    }
+
+    public void removeLobby(Lobby oLob) {
+        if(oLob == null) return;
+        if(oLob.isPrivate()) lobbiesListPriv.remove(oLob);
+        else lobbiesList.remove(oLob);
+    }
+
+    public boolean isLobbyNameAvailable(Lobby lob) {
+        if(lob.isPrivate()) {
+            for(Lobby l: lobbiesListPriv) {
+                if(l.getName().equals(lob.getName())) return false;
+            }
+        } else {
+            for(Lobby l: lobbiesList) {
+                if(l.getName().equals(lob.getName())) return false;
+            }
+        }
+        return true;
+    } 
+
+    public Lobby getPublicLobbyByName(String n) {
+        for(Lobby l: lobbiesList) {
+            if(l.getName().equals(n)) return l;
+        }
+        return null;
     }
 
     

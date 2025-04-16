@@ -1,4 +1,4 @@
-package dev.abhay7.skribbl.client.Crypto;
+package dev.abhay7.skribbl.client.crypto;
 
 import java.security.NoSuchAlgorithmException;
 import java.security.SecureRandom;

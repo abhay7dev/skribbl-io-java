@@ -1,6 +1,7 @@
 package dev.abhay7.skribbl.server;
 
 import java.io.EOFException;
+import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.net.ServerSocket;
@@ -9,6 +10,8 @@ import java.util.concurrent.CopyOnWriteArrayList;
 
 import dev.abhay7.skribbl.server.datapacks.ClientVerificationPack;
 import dev.abhay7.skribbl.server.datapacks.DataPackage;
+import dev.abhay7.skribbl.server.datapacks.JoinLobbyPack;
+import dev.abhay7.skribbl.server.datapacks.LobbyInitPack;
 import dev.abhay7.skribbl.server.datapacks.LobbyListPack;
 
 public class Server {
@@ -61,7 +64,7 @@ public class Server {
         }
     }
 
-    private class ClientCommsHandler implements Runnable {
+    protected class ClientCommsHandler implements Runnable {
 
         private Socket clientSocket;
         private ObjectOutputStream writer;
@@ -69,14 +72,17 @@ public class Server {
         private Thread thisRunnableWrapper;
 
         private boolean verified = false;
+        private boolean isInLobby = false;
+        private String socketId = "";
+        private String username = "";
 
         private ClientCommsHandler(Socket cs, ObjectOutputStream writer, ObjectInputStream reader) {
             this.clientSocket = cs;
             this.writer = writer;
             this.reader = reader;
+            this.socketId = java.time.Instant.now().toEpochMilli() + "_" + Math.random();
         }
-
-        // TODO, handle errors/disconnects, etc
+        
         @Override
         public void run() {
             ClientVerificationPack cvp = new ClientVerificationPack(Math.random() + "");
@@ -96,7 +102,7 @@ public class Server {
                 else {
                     System.out.println("Client successfully verified");
                     this.verified = true;
-                    this.clientSocket.setSoTimeout(0);
+                    this.clientSocket.setSoTimeout(10000);
                 }
 
             } catch(Exception ste) {
@@ -134,7 +140,7 @@ public class Server {
                 if(this.thisRunnableWrapper != null) {
                     connectedClientList.remove(this.thisRunnableWrapper);
                     connectedClientListRunnables.remove(this);
-                    thisRunnableWrapper.join();
+                    // thisRunnableWrapper.join();
                 }
             } catch(Exception e) {
                 System.out.println("Failed to disconnect and terminate a user");
@@ -153,11 +159,68 @@ public class Server {
                     } catch(Exception e) {
                         System.out.println("Failed to send LobbyListPacket to client: " + e);
                     }
+                } else if(dataPackage instanceof LobbyInitPack) {
+                    LobbyInitPack p = (LobbyInitPack) dataPackage;
+                    Lobby lob = null;
+                    try {
+                        lob = new Lobby(p, this);
+                        lobbies.addLobby(lob);
+                        this.writer.writeObject(new LobbyInitPack(true));
+                        this.writer.flush();
+                    } catch(IllegalArgumentException iae) {
+                        System.out.println(iae);
+                        try {
+                            this.writer.writeObject(new LobbyInitPack(false));
+                            this.writer.flush();
+                            // After receiving this package, client should initialize its own game. Because games run on the "host", not the server itself, which only facilitates connection and communication.
+                        } catch(Exception e) {
+                            System.out.println("Failed to send failure to client: " + e);
+                            lobbies.removeLobby(lob);
+                        }
+                    } catch(Exception e) {
+                        System.out.println("Failed to notify of success creating lobby. Removing lobby...");
+                        lobbies.removeLobby(lob);
+                    }
+                    
+                } else if(dataPackage instanceof JoinLobbyPack) {
+                    String lobName = ((JoinLobbyPack) dataPackage).getLobbyName();
+                    this.username = ((JoinLobbyPack) dataPackage).getUsername();
+
+                    Lobby lob = lobbies.getPublicLobbyByName(lobName);
+                    if(lob != null) {
+
+                        try {
+                            lob.addClient(this);
+                            this.writer.writeObject(new JoinLobbyPack(true, lob.getPlayerNames()));
+                            this.writer.flush();
+
+                            lob.notifyAllExceptSender(dataPackage, this);
+                        } catch(Exception e) {
+                            System.out.println("Failed to notify about joining lobby");
+                        }
+
+                    } else {
+                        try {
+                            this.writer.writeObject(new JoinLobbyPack(false));
+                            this.writer.flush();
+                        } catch(Exception e) {
+                            System.out.println("Failed to send failure of joining lobby: " + e);
+                        }
+                    }
                 }
             }
         }
     
+        protected void sendPackage(DataPackage dp) throws IOException {
+
+            writer.writeObject(dp);
+            writer.flush();
+            
+        }
+
+        protected String getUsername() { return this.username; }
 
     }
+
 
 }
