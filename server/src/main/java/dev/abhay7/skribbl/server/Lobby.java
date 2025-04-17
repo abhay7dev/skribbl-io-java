@@ -43,14 +43,14 @@ public class Lobby {
         return false;
     }
 
-    public void notifyHost(DataPackage dp) throws IOException {
-        host.sendPackage(dp);
-    }
+    // public void notifyHost(DataPackage dp) throws IOException {
+    //     host.sendPackage(dp);
+    // }
 
-    public void notifyAllExceptSender(DataPackage dp, Server.ClientCommsHandler sender) throws IOException {
+    public void notifyAllExceptSender(DataPackage dp, Server.ClientCommsHandler sender, MessageType type) throws IOException {
         for(Server.ClientCommsHandler cch: this.clients) {
             try {
-                if(!cch.equals(sender)) cch.sendPackage(dp);
+                if(!cch.equals(sender)) cch.sendDP(dp, type);
             } catch(IllegalAccessError iae) {
                 this.clients.remove(cch);
             }

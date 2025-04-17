@@ -2,6 +2,8 @@ package dev.abhay7.skribbl.server.datapacks;
 
 import java.io.Serializable;
 
+import org.json.JSONObject;
+
 public abstract class DataPackage implements Serializable {
 
     private boolean request;
@@ -14,4 +16,5 @@ public abstract class DataPackage implements Serializable {
         return this.request;
     }
 
+     public abstract JSONObject toJSON();
 }
