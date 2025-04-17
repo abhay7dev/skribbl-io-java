@@ -1,20 +1,12 @@
 package dev.abhay7.skribbl.server.datapacks;
 
-import java.io.Serializable;
+public abstract class DataPackage implements java.io.Serializable {
 
-import org.json.JSONObject;
+    private boolean serverRequest;
 
-public abstract class DataPackage implements Serializable {
+    public DataPackage(boolean serverRequest) { this.serverRequest = serverRequest; }
 
-    private boolean request;
-
-    public DataPackage(boolean isRequest) {
-        this.request = isRequest;
-    }
-
-    public boolean isRequest() {
-        return this.request;
-    }
-
-     public abstract JSONObject toJSON();
+    public boolean isServerRequest() { return this.serverRequest; }
+    
+    public abstract org.json.JSONObject toJSON() throws org.json.JSONException;
 }
