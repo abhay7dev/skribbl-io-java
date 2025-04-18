@@ -40,11 +40,11 @@ public class LobbyListPack extends DataPackage {
     
         if (isServerRequest) return new LobbyListPack();
 
-        org.json.JSONArray lobbiesData = jo.getJSONArray("lobbiesData");
+        JSONArray lobbiesData = jo.getJSONArray("lobbiesData");
         ArrayList<String[]> lobbies = new ArrayList<>();
 
         for (int i = 0; i < lobbiesData.length(); i++) {
-            org.json.JSONArray lobbyData = lobbiesData.getJSONArray(i);
+            JSONArray lobbyData = lobbiesData.getJSONArray(i);
 
             String[] data = new String[lobbyData.length()];
 
@@ -66,7 +66,7 @@ public class LobbyListPack extends DataPackage {
         if(this.isServerRequest()) return jo;
 
         JSONArray jsonLobbiesArray = new JSONArray();
-        for (String[] entry : lobbiesData) {
+        for (String[] entry: lobbiesData) {
             JSONArray aLobby = new JSONArray();
             aLobby.put(entry[0]);
             aLobby.put(entry[1]);

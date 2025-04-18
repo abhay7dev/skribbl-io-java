@@ -5,5 +5,6 @@ public enum MessageType {
     LOBBY_JOIN,
     LOBBY_LIST,
     LOBBY_INIT,
+    FETCH_WORDLIST,
     GAME_DATA,
 }

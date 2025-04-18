@@ -1,15 +1,21 @@
 package dev.abhay7.skribbl.server;
 
+import java.io.BufferedReader;
 import java.io.EOFException;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.InputStreamReader;
 import java.io.OutputStream;
 
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.net.SocketTimeoutException;
-
-
+import java.net.URI;
+import java.net.URL;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.util.ArrayList;
 import java.util.concurrent.CopyOnWriteArrayList;
 
 import org.json.JSONObject;
@@ -24,16 +30,23 @@ public class Server {
     private ServerSocket serverSocket;
     private boolean isRunning;
 
+    private ArrayList<String> wordList;
+
+    private CopyOnWriteArrayList<String> usernames;
     private CopyOnWriteArrayList<Thread> connectedClientList;
     private CopyOnWriteArrayList<ClientCommsHandler> connectedClientListRunnables;
 
     private LobbiesHandler lobbies;
 
-    public Server(int PORT) {
+    public Server(int PORT, String wordListSource) {
         try {
+            this.usernames = new CopyOnWriteArrayList<String>();
             this.connectedClientList = new CopyOnWriteArrayList<Thread>();
             this.connectedClientListRunnables = new CopyOnWriteArrayList<ClientCommsHandler>();
             this.lobbies = new LobbiesHandler();
+
+            wordList = new ArrayList<String>();
+            initializeWordList(wordListSource);
 
             serverSocket = new ServerSocket(PORT);
             isRunning = true;
@@ -45,6 +58,53 @@ public class Server {
         }
 
         runServer();
+    }
+
+    private void initializeWordList(String wordListSource) {
+        try {
+            
+            URL url = new URI(wordListSource).toURL();
+            
+            if (url.getProtocol().equals("http") || url.getProtocol().equals("https")) {
+            
+                BufferedReader reader = new BufferedReader(new InputStreamReader(url.openStream()));
+                String line = null;
+
+                while ((line = reader.readLine()) != null) {
+                    wordList.add(line.split(",")[0]);
+                }
+            
+                reader.close();
+            } else { throw new Exception("Ignored: Not a valid http(s) url"); }
+
+        } catch (Exception ignored) {
+            
+            try {
+            
+                Path path = Paths.get(wordListSource);
+
+                if (path.isAbsolute() || !wordListSource.trim().isEmpty()) {
+                    BufferedReader reader = Files.newBufferedReader(path);
+                    String line = null;
+
+                    while ((line = reader.readLine()) != null) {
+                        wordList.add(line.split(",")[0]);
+                    }
+                
+                    reader.close();
+                } else {
+                    throw new Exception("Not a valid file url");
+                }
+            
+            } catch(Exception e) {
+                System.out.println("Fatal Error. Couldn't initialize word list from: '" + wordListSource + "'");
+                System.exit(1);
+            }
+        }
+        if(wordList.size() < 10) {
+            System.out.println("Initialized word list has a size less than 10. Choose a source with more words.");
+            System.exit(1);
+        }
     }
 
     public void runServer() {
@@ -124,13 +184,15 @@ public class Server {
 
                     if (responseVerification.getVerificationString() == null || responseVerification.getUsername() == null || responseVerification.getUsername().equals("") || !responseVerification.getVerificationString().equals(cvp.getVerificationString() + verifyString)) { 
                         throw new Exception("Invalid verification response");
+                    } else if(usernames.contains(responseVerification.getUsername())) {
+                        throw new Exception("Username already taken");
                     } else {
                         System.out.println("Client successfully verified");
                         this.username = responseVerification.getUsername();
+                        usernames.add(this.username);                 
                         this.clientSocket.setSoTimeout(waittime);
                         this.verified = true;
                     }
-
                 }
 
             } catch (Exception e) {
@@ -161,6 +223,9 @@ public class Server {
                             break;
                         case LOBBY_LIST:
                             receivedClientData = LobbyListPack.fromJSON(innerDataString);
+                            break;
+                        case FETCH_WORDLIST:
+                            receivedClientData = WordsFetchPack.fromJSON(innerDataString);
                             break;
                         default:
                             throw new Exception("Unsupported message type");
@@ -194,6 +259,9 @@ public class Server {
                 }
                 if(this.isInLobby()) {
                     this.getCurrentLobby().removeClient(this);
+                }
+                if(this.username != null) {
+                    usernames.remove(username);
                 }
             } catch (Exception e) {
                 System.out.println("Failed to disconnect and terminate a user: " + this.socketId + " - " + this.username);
@@ -235,12 +303,13 @@ public class Server {
                             // connection and communication.
                         } catch (Exception e) {
                             System.out.println("Failed to send failure to client: " + e);
+                            lob.removeClient(this);
                             lobbies.removeLobby(lob);
                             this.currentLobby = null;
-                            lob = null;
                         }
                     } catch (Exception e) {
                         System.out.println("Failed to notify of success creating lobby. Removing lobby...");
+                        lob.removeClient(this);
                         lobbies.removeLobby(lob);
                         this.currentLobby = null;
                         lob = null;
@@ -262,12 +331,29 @@ public class Server {
                             lob.notifyAllExceptSender(dataPackage, this, MessageType.LOBBY_JOIN);
                         } catch (Exception e) {
                             System.out.println("Failed to notify about joining lobby");
+                            lob.removeClient(this);
+                            this.currentLobby = null;
+                            try {
+                                sendDataPackage(new LobbyJoinPack(), MessageType.LOBBY_JOIN);
+                            } catch (Exception ex) {
+                                System.out.println("Failed to send failure of joining lobby: " + ex);
+                            }
                         }
                     } else {
                         try {
                             sendDataPackage(new LobbyJoinPack(), MessageType.LOBBY_JOIN);
                         } catch (Exception e) {
                             System.out.println("Failed to send failure of joining lobby: " + e);
+                        }
+                    }
+                } else if(dataPackage instanceof WordsFetchPack) {
+                    if(this.isInLobby()) {
+                        WordsFetchPack toSend = new WordsFetchPack(wordList);
+                        try {
+                            this.sendDataPackage(toSend, MessageType.FETCH_WORDLIST);
+                            System.out.println("Sent WordsFetchPack with words list to " + this.socketId);
+                        } catch (Exception e) {
+                            System.out.println("Failed to send LobbyListPacket to client: " + e);
                         }
                     }
                 }

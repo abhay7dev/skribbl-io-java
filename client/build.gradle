@@ -16,6 +16,8 @@ repositories {
 
 dependencies {
     implementation 'com.formdev:flatlaf:3.2'
+    implementation 'org.json:json:20240303'
+    implementation project(':server')
 }
 
 java {
