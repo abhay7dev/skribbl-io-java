@@ -76,9 +76,9 @@ public class Main2 extends JPanel {
 
         Border border = BorderFactory.createLineBorder(Color.black);
 
-        JFrame serverList = new JFrame("Lobby List");
+        //JFrame serverList = new JFrame("Lobby List");
 
-        JFrame portInput = new JFrame("SeverIP");
+        /*JFrame portInput = new JFrame("SeverIP");
         portInput.setLayout(new FlowLayout());
         portInput.setVisible(true);
         portInput.setSize(200, 80);
@@ -96,9 +96,9 @@ public class Main2 extends JPanel {
         portInput.add(pButton);
 
         String ip = "localhost"; //how do we do this?
-        Socket connection = new Socket(ip, Integer.parseInt("8080"));
+        Socket connection = new Socket(ip, Integer.parseInt("8080")); // check this out
         PrintWriter writer = new PrintWriter(connection.getOutputStream());
-        BufferedReader reader = new BufferedReader(new InputStreamReader(connection.getInputStream()));
+        BufferedReader reader = new BufferedReader(new InputStreamReader(connection.getInputStream()));*/
 
         boolean gameGoing = true;
         JFrame frame = new JFrame("Skribbl 2");
@@ -239,7 +239,7 @@ public class Main2 extends JPanel {
         gameRoom.add(chatArea, BorderLayout.CENTER);
 
         
-        serverList.setVisible(false);
+        /*serverList.setVisible(false);
         serverList.setSize(width, height);
         serverList.getContentPane().setBackground(new Color(230, 230, 250));
 
@@ -262,7 +262,7 @@ public class Main2 extends JPanel {
 
 
         serverList.add(sTitle, BorderLayout.NORTH);
-        serverList.add(scrollPane);
+        serverList.add(scrollPane);*/
         
 
         frame.setVisible(false);
