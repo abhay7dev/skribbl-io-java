@@ -2,7 +2,6 @@ package dev.abhay7.skribbl.client;
 
 import java.awt.BorderLayout;
 import java.awt.Dimension;
-import java.awt.FlowLayout;
 import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
 import java.io.IOException;
@@ -10,10 +9,14 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.net.Socket;
 
+import javax.swing.Box;
+import javax.swing.BoxLayout;
+import javax.swing.JButton;
 import javax.swing.JFrame;
 import javax.swing.JLabel;
 import javax.swing.JOptionPane;
 import javax.swing.JPanel;
+import javax.swing.border.EmptyBorder;
 
 import org.json.JSONObject;
 
@@ -122,7 +125,29 @@ public class Client extends JFrame {
         // Add header to the NORTH of the panel
         toRet.add(header, BorderLayout.NORTH);
 
-        
+
+        // Options panel to hold all the panels
+        JPanel options = new JPanel();
+        options.setLayout(new BoxLayout(options, BoxLayout.PAGE_AXIS));
+        options.setSize(WIDTH / 9, HEIGHT);
+        options.setBorder(new EmptyBorder(0, 0, 0, 10));
+
+        JButton[] buttons = new JButton[5];
+        buttons[0] = new JButton("Join Lobby");
+        buttons[1] = new JButton("Create Lobby");
+        buttons[2] = new JButton("Refresh Lobbies List");
+        buttons[3] = new JButton("About Skribbl");
+        buttons[4] = new JButton("Quit Skribbl");
+
+        for(JButton button: buttons) {
+            button.setPreferredSize(new Dimension(WIDTH / 9, HEIGHT / (buttons.length + 10)));
+            button.setMinimumSize(new Dimension(WIDTH / 9, HEIGHT / (buttons.length + 10)));
+            button.setMaximumSize(new Dimension(WIDTH / 9, HEIGHT / (buttons.length + 10)));
+            options.add(button);
+            options.add(Box.createVerticalGlue());
+        }
+
+        toRet.add(options, BorderLayout.EAST);
 
         return toRet;
     }
