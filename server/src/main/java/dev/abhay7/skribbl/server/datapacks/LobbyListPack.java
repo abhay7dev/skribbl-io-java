@@ -3,77 +3,76 @@ package dev.abhay7.skribbl.server.datapacks;
 import java.util.ArrayList;
 
 import org.json.JSONArray;
+import org.json.JSONException;
 import org.json.JSONObject;
-
-import dev.abhay7.skribbl.server.Lobby;
 
 public class LobbyListPack extends DataPackage {
     
     private ArrayList<String[]> lobbiesData;
 
+    // If client sends LobbyListPack, it will always be requesting the server
     public LobbyListPack() {
         super(true);
     }
 
-    public LobbyListPack(ArrayList<String[]> lobbiesData, boolean isRequest) {
-        super(isRequest);
+    // Server responds with ArrayList of String[] arrays.
+    // Each Each String[] contains data for each lobby, with String[0] being the server name, and String[1] being the number of people in the lobby. (Remember max is 10)
+    // Server must use 
+    private LobbyListPack(ArrayList<String[]> lobbiesData) {
+        super(false);
         this.lobbiesData = lobbiesData;
     }
 
-    public LobbyListPack(ArrayList<Lobby> lobs) {
-        super(false);
-        lobbiesData = new ArrayList<String[]>();
-        lobs.forEach((l) -> {
-            lobbiesData.add(new String[]{l.getName(), l.isPrivate() + ""}); 
+    // This is the "Server"'s response constructor that it will use to create the response
+    public static LobbyListPack getFromLobbies(ArrayList<dev.abhay7.skribbl.server.Lobby> lobs) {
+        ArrayList<String[]> toRet = new ArrayList<>();
+        lobs.forEach((lob) -> {
+            toRet.add(new String[]{lob.getName(), lob.getPlayerNames().size() + ""});
         });
+        return new LobbyListPack(toRet);
     }
 
-    public ArrayList<String[]> getLobbies() {
-        return this.lobbiesData;
-    }
+    public ArrayList<String[]> getLobbies() { return this.lobbiesData; }
 
-    public static LobbyListPack fromJSON(String json) throws Exception {
-        org.json.JSONObject jo = new org.json.JSONObject(json);
-        boolean isRequest = jo.getBoolean("isRequest");
+    public static LobbyListPack fromJSON(String json) throws JSONException {
+        JSONObject jo = new JSONObject(json);
+        boolean isServerRequest = jo.getBoolean("isServerRequest");
     
-        if (isRequest) {
-            return new LobbyListPack();
+        if (isServerRequest) return new LobbyListPack();
+
+        org.json.JSONArray lobbiesData = jo.getJSONArray("lobbiesData");
+        ArrayList<String[]> lobbies = new ArrayList<>();
+
+        for (int i = 0; i < lobbiesData.length(); i++) {
+            org.json.JSONArray lobbyData = lobbiesData.getJSONArray(i);
+
+            String[] data = new String[lobbyData.length()];
+
+            for (int j = 0; j < lobbyData.length(); j++) {
+                data[j] = lobbyData.getString(j);
+            }
+
+            lobbies.add(data);
         }
 
-        
-        if (jo.has("lobbiesData")) {
-            org.json.JSONArray arr = jo.getJSONArray("lobbiesData");
-            java.util.ArrayList<String[]> lobbies = new java.util.ArrayList<>();
-            for (int i = 0; i < arr.length(); i++) {
-                org.json.JSONArray inner = arr.getJSONArray(i);
-                String[] data = new String[inner.length()];
-                for (int j = 0; j < inner.length(); j++) {
-                    data[j] = inner.getString(j);
-                }
-                lobbies.add(data);
-            }
-            return new LobbyListPack(lobbies, false);
-        }
-        else {
-            return null;
-        }
+        return new LobbyListPack(lobbies);
     }
 
     @Override
     public JSONObject toJSON() {
         JSONObject jo = new JSONObject();
-        jo.put("isRequest", isRequest());
+        jo.put("isServerRequest", this.isServerRequest());
 
-        if (!isRequest() && lobbiesData != null) {
-            JSONArray outer = new JSONArray();
-            for (String[] entry : lobbiesData) {
-                JSONArray inner = new JSONArray();
-                inner.put(entry[0]);
-                inner.put(entry[1]);
-                outer.put(inner);
-            }
-            jo.put("lobbiesData", outer);
+        if(this.isServerRequest()) return jo;
+
+        JSONArray jsonLobbiesArray = new JSONArray();
+        for (String[] entry : lobbiesData) {
+            JSONArray aLobby = new JSONArray();
+            aLobby.put(entry[0]);
+            aLobby.put(entry[1]);
+            jsonLobbiesArray.put(aLobby);
         }
+        jo.put("lobbiesData", jsonLobbiesArray);
 
         return jo;
     }
