@@ -95,8 +95,8 @@ public class Main2 extends JPanel {
         portInput.add(portInputBox);
         portInput.add(pButton);
 
-        String ip = "ip"; //how do we do this?
-        Socket connection = new Socket(ip, Integer.parseInt(main.PORT));
+        String ip = "localhost"; //how do we do this?
+        Socket connection = new Socket(ip, Integer.parseInt("8080"));
         PrintWriter writer = new PrintWriter(connection.getOutputStream());
         BufferedReader reader = new BufferedReader(new InputStreamReader(connection.getInputStream()));
 
