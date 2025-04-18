@@ -16,6 +16,24 @@ import java.net.URISyntaxException;
 import java.net.URL;
 
 import com.formdev.flatlaf.*;
+import java.net.*;
+
+/*
+ * PLANS:
+ * Since Client is in a lobby in the server, it just needs to request data and the server will give it. Neat!
+ *  - differentiate between the different types of data to know what to put where
+ *      - client does its own thing THEN syncs up with server
+ * 
+ * Guessing - guesses should be handled by the DRAWING client, who knows what the word is.
+ *  - the drawing client while putting in the chat also checks if its correct and sends that data back to everyone else
+ * 
+ * "Ghost" texter - When the client guesses right only people who already have a "won" tag or something get the messages
+ * 
+ * Scoring - scoring should also be handled by the drawing client, who can keep track of who guesses first, second, etc. Tally up points and distribute it at the end of the round
+ *  
+ * Mostly I'm thinking the logic should be handled by the drawing person just because they know the word data
+ * 
+ */
 
 public class Main extends JPanel {
     
@@ -41,10 +59,11 @@ public class Main extends JPanel {
         playerList.add(new Player("chatting", "Lebron James"));
     }
 
-    public static void main(String... args) throws InterruptedException, FileNotFoundException, URISyntaxException {
+    public static void main(String... args) throws InterruptedException, FileNotFoundException, URISyntaxException, IOException {
         // System.out.println("Working Directory = " + System.getProperty("user.dir"));
 
         words = getWordList();
+        Main main = new Main();
         
         //FlatIntelliJLaf.registerCustomDefaultsSource("style");
         FlatIntelliJLaf.setup();
@@ -57,8 +76,31 @@ public class Main extends JPanel {
 
         Border border = BorderFactory.createLineBorder(Color.black);
 
+        JFrame serverList = new JFrame("Lobby List");
+
+        JFrame portInput = new JFrame("SeverIP");
+        portInput.setLayout(new FlowLayout());
+        portInput.setVisible(true);
+        portInput.setSize(200, 80);
+
+
+        JTextField portInputBox = new JTextField(7);
+        JButton pButton = new JButton("Confirm");
+        pButton.addActionListener(e -> {
+            main.PORT = portInputBox.getText();
+            portInput.setVisible(false);
+            serverList.setVisible(true);
+        });
+
+        portInput.add(portInputBox);
+        portInput.add(pButton);
+
+        String ip = "ip"; //how do we do this?
+        Socket connection = new Socket(ip, Integer.parseInt(main.PORT));
+        PrintWriter writer = new PrintWriter(connection.getOutputStream());
+        BufferedReader reader = new BufferedReader(new InputStreamReader(connection.getInputStream()));
+
         boolean gameGoing = true;
-        Main main = new Main();
         JFrame frame = new JFrame("Skribbl 2");
         frame.getContentPane().setBackground(new Color(0, 0, 0, 0));
         
@@ -67,6 +109,7 @@ public class Main extends JPanel {
         frame.setLayout(new BorderLayout());
         frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         frame.setBackground(new Color(230,230,250));
+
 
         JPanel gameRoom = new JPanel(new BorderLayout());
 
@@ -195,7 +238,7 @@ public class Main extends JPanel {
         gameRoom.add(sideContainer, BorderLayout.WEST);
         gameRoom.add(chatArea, BorderLayout.CENTER);
 
-        JFrame serverList = new JFrame("Lobby List");
+        
         serverList.setVisible(false);
         serverList.setSize(width, height);
         serverList.getContentPane().setBackground(new Color(230, 230, 250));
@@ -206,23 +249,6 @@ public class Main extends JPanel {
         JPanel serverListPanel = new JPanel();
         serverListPanel.setLayout(new BoxLayout(serverListPanel, BoxLayout.Y_AXIS));
         serverListPanel.setBackground(new Color(230, 230, 250));
-
-        JFrame portInput = new JFrame("SeverIP");
-        portInput.setLayout(new FlowLayout());
-        portInput.setVisible(true);
-        portInput.setSize(200, 80);
-
-
-        JTextField portInputBox = new JTextField(7);
-        JButton pButton = new JButton("Confirm");
-        pButton.addActionListener(e -> {
-            main.PORT = portInputBox.getText();
-            portInput.setVisible(false);
-            serverList.setVisible(true);
-        });
-
-        portInput.add(portInputBox);
-        portInput.add(pButton);
 
         //create an arrayLIST FOR THE PANELS REFRESH IT
 
@@ -242,6 +268,8 @@ public class Main extends JPanel {
         frame.setVisible(false);
         frame.setResizable(true);
         frame.add(gameRoom);
+
+
 
         while(gameGoing) {
             //Cient does its own logic - sends to server
