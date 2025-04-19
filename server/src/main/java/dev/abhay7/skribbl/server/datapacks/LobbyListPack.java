@@ -27,7 +27,7 @@ public class LobbyListPack extends DataPackage {
     public static LobbyListPack getFromLobbies(ArrayList<dev.abhay7.skribbl.server.Lobby> lobs) {
         ArrayList<String[]> toRet = new ArrayList<>();
         lobs.forEach((lob) -> {
-            toRet.add(new String[]{lob.getName(), lob.getPlayerNames().size() + ""});
+            toRet.add(new String[]{lob.getName(), lob.getPlayerNames().size() + "", lob.getHostname()});
         });
         return new LobbyListPack(toRet);
     }
@@ -70,6 +70,7 @@ public class LobbyListPack extends DataPackage {
             JSONArray aLobby = new JSONArray();
             aLobby.put(entry[0]);
             aLobby.put(entry[1]);
+            aLobby.put(entry[2]);
             jsonLobbiesArray.put(aLobby);
         }
         jo.put("lobbiesData", jsonLobbiesArray);

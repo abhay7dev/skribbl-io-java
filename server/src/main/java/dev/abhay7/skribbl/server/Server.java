@@ -227,6 +227,9 @@ public class Server {
                         case FETCH_WORDLIST:
                             receivedClientData = WordsFetchPack.fromJSON(innerDataString);
                             break;
+                        case KEEP_ALIVE:
+                            receivedClientData = KeepAlivePack.fromJSON(innerDataString);
+                            break;
                         default:
                             throw new Exception("Unsupported message type");
                     }
@@ -356,7 +359,9 @@ public class Server {
                             System.out.println("Failed to send LobbyListPacket to client: " + e);
                         }
                     }
-                }
+                } /*else if(dataPackage instanceof KeepAlivePack) {
+                    System.out.println("Received keep alive pack: " + java.time.Instant.now().toEpochMilli());
+                }*/
             }
         }
 

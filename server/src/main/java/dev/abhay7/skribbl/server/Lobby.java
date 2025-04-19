@@ -26,11 +26,17 @@ public class Lobby {
     }
     
     public String getName() { return this.name; }
-
+    public String getHostname() { return this.host.getUsername(); }
 
     public boolean isHost(Server.ClientCommsHandler cch) {
         if(this.host.equals(cch)) return true;
         return false;
+    }
+
+    public void notifyAll(DataPackage dp, Server.ClientCommsHandler sender, MessageType type) throws IOException {
+        for(Server.ClientCommsHandler cch: this.clients) {
+            cch.sendDataPackage(dp, type);
+        }
     }
 
     public void notifyAllExceptSender(DataPackage dp, Server.ClientCommsHandler sender, MessageType type) throws IOException {
