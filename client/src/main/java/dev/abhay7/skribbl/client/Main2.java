@@ -113,6 +113,140 @@ public class Main2 extends JPanel {
 
         JPanel gameRoom = new JPanel(new BorderLayout());
 
+        JTextArea chat = createChat();
+
+        JPanel sideContainer = createSideContainer(main);
+
+        JPanel chatArea = createChatArea(textMessages, main, chat);
+        
+        
+
+        gameRoom.add(sideContainer, BorderLayout.WEST);
+        gameRoom.add(chatArea, BorderLayout.CENTER);
+
+        
+        /*serverList.setVisible(false);
+        serverList.setSize(width, height);
+        serverList.getContentPane().setBackground(new Color(230, 230, 250));
+
+        JLabel sTitle = new JLabel("Server List", SwingConstants.CENTER);
+        sTitle.setFont(new Font("SansSerif", Font.BOLD, 32));
+
+        JPanel serverListPanel = new JPanel();
+        serverListPanel.setLayout(new BoxLayout(serverListPanel, BoxLayout.Y_AXIS));
+        serverListPanel.setBackground(new Color(230, 230, 250));
+
+        //create an arrayLIST FOR THE PANELS REFRESH IT
+
+        for (int i = 1; i <= 5; i++) {
+            serverListPanel.add(createServerM("Lobby " + i, "public", frame, serverList));
+        }
+
+        JScrollPane scrollPane = new JScrollPane(serverListPanel);
+        scrollPane.getVerticalScrollBar().setUnitIncrement(16);
+
+
+
+        serverList.add(sTitle, BorderLayout.NORTH);
+        serverList.add(scrollPane);*/
+        
+
+        frame.setVisible(false);
+        frame.setResizable(true);
+        frame.add(gameRoom);
+
+
+
+        while(gameGoing) {
+            //Cient does its own logic - sends to server
+
+
+            //Clients gets relayed info from server - updates its own variables
+
+
+            //Client displays the results
+            chat.setText("");
+            for (String s : textMessages) {
+                chat.append(s + "\n");
+            }
+
+            SwingUtilities.invokeLater(() -> main.repaint());
+
+            
+
+            Thread.sleep(10);
+        }
+        
+        
+
+    }
+
+    public static JTextArea createChat() {
+        JTextArea chat = new JTextArea();
+        chat.setEditable(false);
+        chat.setLineWrap(false);
+        chat.setWrapStyleWord(true);
+
+        return chat;
+    }
+
+    public static JPanel createChatArea(ArrayList<String> textMessages, Main2 main, JTextArea chat) {
+        Border border = BorderFactory.createLineBorder(Color.black);
+        JPanel chatArea = new JPanel(new FlowLayout(FlowLayout.RIGHT, 100, 20));
+        chatArea.setBackground(new Color(230, 230, 250)); // lavender
+        chatArea.setPreferredSize(new Dimension(800, 800));
+
+        JPanel chatBox = new JPanel(new BorderLayout());
+        chatBox.setPreferredSize(new Dimension(
+            (int) (width * 0.30), // 25% width of the frame
+            (int) (height * 0.60) // 25% height of the frame
+        ));
+        chatBox.setBorder(border);
+        chatBox.setBackground(Color.WHITE);
+
+        JLabel chatTitle = new JLabel("Chat", SwingConstants.CENTER);
+        chatTitle.setBackground(Color.LIGHT_GRAY);
+        chatTitle.setOpaque(true);
+        chatBox.add(chatTitle, BorderLayout.NORTH);
+
+        JTextField cField = new JTextField(10);
+        JButton cButton = new JButton("Send");
+        cButton.addActionListener(e -> {
+            String in = cField.getText();
+            if (!in.equals("")) textMessages.add(main.player.getName() + ": " + in);
+            cField.setText("");
+        });
+
+        JPanel chatSend = new JPanel(new FlowLayout());
+
+        chatSend.add(cField);
+        chatSend.add(cButton);
+
+        chatBox.add(chatSend, BorderLayout.SOUTH);
+
+        JScrollPane scrollChat = new JScrollPane(chat);
+
+        chatBox.add(scrollChat, BorderLayout.CENTER);
+        
+        chatArea.add(chatBox);
+
+        JPanel j = new JPanel();
+        j.setLayout(new BoxLayout(j, BoxLayout.Y_AXIS));
+        j.setPreferredSize(new Dimension(200,200));
+        j.setBackground(Color.WHITE);
+        j.setBorder(border);
+        j.add(new JLabel("PLAYER LIST"));
+        for (Player p : playerList) {
+            j.add(new JLabel(p.playerName));
+
+            chatArea.add(j);
+        }
+
+        return chatArea;
+    }
+
+    public static JPanel createSideContainer(Main2 main) {
+        Border border = BorderFactory.createLineBorder(Color.black);
         JPanel leftPanel = new JPanel();
         leftPanel.setLayout(new BoxLayout(leftPanel, BoxLayout.Y_AXIS));
 
@@ -175,124 +309,11 @@ public class Main2 extends JPanel {
         board.addMouseListener(main.player);
         board.addMouseMotionListener(main.player);
 
-        JPanel chatArea = new JPanel(new FlowLayout(FlowLayout.RIGHT, 100, 20));
-        chatArea.setBackground(new Color(230, 230, 250)); // lavender
-        chatArea.setPreferredSize(new Dimension(800, 800));
-
-        JPanel chatBox = new JPanel(new BorderLayout());
-        chatBox.setPreferredSize(new Dimension(
-            (int) (width * 0.30), // 25% width of the frame
-            (int) (height * 0.60) // 25% height of the frame
-        ));
-        chatBox.setBorder(border);
-        chatBox.setBackground(Color.WHITE);
-
-        JLabel chatTitle = new JLabel("Chat", SwingConstants.CENTER);
-        chatTitle.setBackground(Color.LIGHT_GRAY);
-        chatTitle.setOpaque(true);
-        chatBox.add(chatTitle, BorderLayout.NORTH);
-
-        JTextField cField = new JTextField(10);
-        JButton cButton = new JButton("Send");
-        cButton.addActionListener(e -> {
-            String in = cField.getText();
-            if (!in.equals("")) textMessages.add(main.player.getName() + ": " + in);
-            cField.setText("");
-        });
-
-        JPanel chatSend = new JPanel(new FlowLayout());
-
-        chatSend.add(cField);
-        chatSend.add(cButton);
-
-        chatBox.add(chatSend, BorderLayout.SOUTH);
-
-        JTextArea chat = new JTextArea();
-        chat.setEditable(false);
-        chat.setLineWrap(false);
-        chat.setWrapStyleWord(true);
-
-        JScrollPane scrollChat = new JScrollPane(chat);
-
-        chatBox.add(scrollChat, BorderLayout.CENTER);
-        
-        chatArea.add(chatBox);
-
-        JPanel j = new JPanel();
-        j.setLayout(new BoxLayout(j, BoxLayout.Y_AXIS));
-        j.setPreferredSize(new Dimension(200,200));
-        j.setBackground(Color.WHITE);
-        j.setBorder(border);
-        j.add(new JLabel("PLAYER LIST"));
-        for (Player p : playerList) {
-            j.add(new JLabel(p.playerName));
-
-            chatArea.add(j);
-        }
-        
         JPanel sideContainer = new JPanel(new FlowLayout(FlowLayout.LEFT, 5, 20));
         sideContainer.add(leftPanel);
         sideContainer.setBackground(new Color(230, 230, 250));
-        
 
-        gameRoom.add(sideContainer, BorderLayout.WEST);
-        gameRoom.add(chatArea, BorderLayout.CENTER);
-
-        
-        /*serverList.setVisible(false);
-        serverList.setSize(width, height);
-        serverList.getContentPane().setBackground(new Color(230, 230, 250));
-
-        JLabel sTitle = new JLabel("Server List", SwingConstants.CENTER);
-        sTitle.setFont(new Font("SansSerif", Font.BOLD, 32));
-
-        JPanel serverListPanel = new JPanel();
-        serverListPanel.setLayout(new BoxLayout(serverListPanel, BoxLayout.Y_AXIS));
-        serverListPanel.setBackground(new Color(230, 230, 250));
-
-        //create an arrayLIST FOR THE PANELS REFRESH IT
-
-        for (int i = 1; i <= 5; i++) {
-            serverListPanel.add(createServerM("Lobby " + i, "public", frame, serverList));
-        }
-
-        JScrollPane scrollPane = new JScrollPane(serverListPanel);
-        scrollPane.getVerticalScrollBar().setUnitIncrement(16);
-
-
-
-        serverList.add(sTitle, BorderLayout.NORTH);
-        serverList.add(scrollPane);*/
-        
-
-        frame.setVisible(false);
-        frame.setResizable(true);
-        frame.add(gameRoom);
-
-
-
-        while(gameGoing) {
-            //Cient does its own logic - sends to server
-
-
-            //Clients gets relayed info from server - updates its own variables
-
-
-            //Client displays the results
-            chat.setText("");
-            for (String s : textMessages) {
-                chat.append(s + "\n");
-            }
-
-            SwingUtilities.invokeLater(() -> main.repaint());
-
-            
-
-            Thread.sleep(10);
-        }
-        
-        
-
+        return sideContainer;
     }
 
     @Override
