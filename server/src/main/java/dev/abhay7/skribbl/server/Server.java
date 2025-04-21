@@ -192,6 +192,7 @@ public class Server {
                         usernames.add(this.username);                 
                         this.clientSocket.setSoTimeout(waittime);
                         this.verified = true;
+                        sendDataPackage(new ClientVerificationPack(true), MessageType.CLIENT_VERIFICATION);
                     }
                 }
 
@@ -224,11 +225,14 @@ public class Server {
                         case LOBBY_LIST:
                             receivedClientData = LobbyListPack.fromJSON(innerDataString);
                             break;
+                        case LOBBY_LEAVE:
+                            receivedClientData = LobbyLeavePack.fromJSON(innerDataString);
+                            break;
                         case FETCH_WORDLIST:
                             receivedClientData = WordsFetchPack.fromJSON(innerDataString);
                             break;
                         case KEEP_ALIVE:
-                            receivedClientData = KeepAlivePack.fromJSON(innerDataString);
+                            receivedClientData = new KeepAlivePack();
                             break;
                         default:
                             throw new Exception("Unsupported message type");
@@ -261,7 +265,7 @@ public class Server {
                     // thisRunnableWrapper.join();
                 }
                 if(this.isInLobby()) {
-                    this.getCurrentLobby().removeClient(this);
+                    this.leaveLobby();
                 }
                 if(this.username != null) {
                     usernames.remove(username);
@@ -278,13 +282,12 @@ public class Server {
             if (this.verified && dataPackage.isServerRequest()) {
             
                 if (dataPackage instanceof LobbyListPack) {
-            
                     LobbyListPack toSend = LobbyListPack.getFromLobbies(lobbies.getLobbyArrayList());
                     try {
                         this.sendDataPackage(toSend, MessageType.LOBBY_LIST);
-                        System.out.println("Sent LobbyPack with lobbies list to " + this.socketId);
+                        System.out.println("Sent LobbyListPack with lobbies list to " + this.socketId);
                     } catch (Exception e) {
-                        System.out.println("Failed to send LobbyListPacket to client: " + e);
+                        System.out.println("Failed to send LobbyListPack to client: " + e);
                     }
 
                 } else if (dataPackage instanceof LobbyInitPack) {
@@ -325,10 +328,9 @@ public class Server {
                     Lobby lob = lobbies.getLobbyByName(lobName);
                     if (this.username != null && lob != null) {
                         try {
-                            sendDataPackage(new LobbyJoinPack(lob.getPlayerNames()), MessageType.LOBBY_JOIN);
+                            sendDataPackage(new LobbyJoinPack(lob.getPlayerNames(), lob.isStarted()), MessageType.LOBBY_JOIN);
                             lob.addClient(this);
                             this.currentLobby = lob;
-                            this.writer.flush();
                             
                             System.out.println("Notifying all except sender (" + this.username + ")");
                             lob.notifyAllExceptSender(dataPackage, this, MessageType.LOBBY_JOIN);
@@ -359,9 +361,28 @@ public class Server {
                             System.out.println("Failed to send LobbyListPacket to client: " + e);
                         }
                     }
-                } /*else if(dataPackage instanceof KeepAlivePack) {
+                } else if(dataPackage instanceof LobbyLeavePack) {
+                    try {
+                        leaveLobby();
+                    } catch(Exception ioe) {
+                        System.out.println("Failed to notify clients that someone left lobby.");
+                    }
+                }/*else if(dataPackage instanceof KeepAlivePack) {
                     System.out.println("Received keep alive pack: " + java.time.Instant.now().toEpochMilli());
                 }*/
+            }
+        }
+
+        private void leaveLobby() throws IOException {
+            if(this.isInLobby()) {
+                this.getCurrentLobby().removeClient(this);
+                if(this.getCurrentLobby().getClients().size() == 0) {
+                    this.getCurrentLobby().stop();
+                    lobbies.removeLobby(this.getCurrentLobby());
+                } else {
+                    this.getCurrentLobby().notifyAll(new LobbyLeavePack(this.username), this, MessageType.LOBBY_LEAVE);
+                }
+                this.currentLobby = null;
             }
         }
 

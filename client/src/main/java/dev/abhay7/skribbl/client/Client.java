@@ -48,9 +48,13 @@ public class Client extends JFrame {
     private Thread networkThread;
     private boolean runningProgram;
 
-    private JPanel lobbiesPanel;
+    private JPanel currentPanel;
 
-    private JFrame thisPanel;
+    private boolean inLobby;
+    private boolean inGame;
+    private ArrayList<String> usersInGame;
+
+    private int openDialogs = 0;
 
     public Client(String[] args) {
         if(args.length < 3 || args[0].isBlank() || args[1].isBlank() || args[2].equals("0")) {
@@ -58,58 +62,70 @@ public class Client extends JFrame {
             System.exit(1);
         }
 
+        runningProgram = true;
+
         this.username = args[0];
         this.serverInet = args[1];
+
         try {
             this.serverPort = Integer.parseInt(args[2]);
             socket = new Socket(this.serverInet, this.serverPort);
             reader = socket.getInputStream();
             writer = socket.getOutputStream();
 
-            String receivedJsonString = RawPacketHandler.readRawPacket(reader);
-
-            JSONObject receivedJsonObject = new JSONObject(receivedJsonString);
-            String type = receivedJsonObject.getString("type");
-            
-            if(MessageType.valueOf(type) != MessageType.CLIENT_VERIFICATION) {
-                throw new Exception("Invalid MessageType in request");
-            }
-
-            String innerDataString = receivedJsonObject.getJSONObject("data").toString();
+            String innerDataString = readJSONDataToString(MessageType.CLIENT_VERIFICATION);
             ClientVerificationPack responseVerification = ClientVerificationPack.fromJSON(innerDataString);
             responseVerification = new ClientVerificationPack(responseVerification.getVerificationString() + "_VERIFIEDCONNECTION", this.username);
             sendDataPackage(responseVerification, MessageType.CLIENT_VERIFICATION);
 
+            String confirmString = readJSONDataToString(MessageType.CLIENT_VERIFICATION);
+            ClientVerificationPack confirmPack = ClientVerificationPack.fromJSON(confirmString);
+            if(!confirmPack.isSuccess()) throw new Exception("Failure");
+
         } catch(Exception e) {
-            System.err.println(e);
-            JOptionPane.showMessageDialog(null, "Failed to connect to server. Your username may have been taken or your internet may be down.", "Network Error", JOptionPane.ERROR_MESSAGE);
-            System.exit(0);
+            showMessageDialog("Failed to connect to server. Your username may have been taken or your internet may be down.", "Network Error", JOptionPane.ERROR_MESSAGE, false);
+            runningProgram = false;
         }
 
-        thisPanel = this;
-        networkThread = new Thread(new ClientNetworkHandler());
+        if(runningProgram) {
+            networkThread = new Thread(new ClientNetworkHandler());
 
-        this.setTitle("skribbl.io (Java) - Lobbies - " + this.serverInet + ":" + this.serverPort);
-        this.setSize(Client.WINDOW_SIZE);
-        this.setMinimumSize(Client.WINDOW_SIZE);
-        this.setMaximumSize(Client.WINDOW_SIZE);
-        this.setResizable(false);
-        this.setLocationRelativeTo(null);
+            this.setTitle("skribbl.io (Java) - Lobbies - " + this.serverInet + ":" + this.serverPort);
+            this.setSize(Client.WINDOW_SIZE);
+            this.setMinimumSize(Client.WINDOW_SIZE);
+            this.setMaximumSize(Client.WINDOW_SIZE);
+            this.setResizable(false);
+            this.setLocationRelativeTo(null);
 
-        this.addWindowListener(new WindowAdapter() {
-            @Override
-            public void windowClosing(WindowEvent e) {
-                exitProgram();
-            }
-        });
+            this.addWindowListener(new WindowAdapter() {
+                @Override
+                public void windowClosing(WindowEvent e) {
+                    exitProgram();
+                }
+            });
 
-        lobbiesPanel = getLobbiesPanel();
-        this.add(lobbiesPanel);
+            currentPanel = getLobbiesPanel();
+            this.add(currentPanel);
 
-        runningProgram = true;
-        networkThread.start();
+            networkThread.start();
 
-        this.setVisible(true);
+            this.inLobby = false;
+            this.inGame = false;
+            usersInGame = new ArrayList<String>();
+
+            this.setVisible(true);
+        } else {
+            exitProgram();
+        }
+    }
+
+    private JPanel getHoldingRoomPanel() {
+        JPanel toRet = new JPanel(new BorderLayout());
+        toRet.setSize(WINDOW_SIZE);
+
+        toRet.add(new JLabel("hi"), BorderLayout.NORTH);
+
+        return toRet;
     }
 
     private JPanel getLobbiesPanel() {
@@ -161,7 +177,18 @@ public class Client extends JFrame {
         buttons[1] = new JButton("Create Lobby");
         buttons[1].addActionListener((e) -> {
             String[] lobbyArgs = promptForCreateLobbyArgs();
-            
+            if(lobbyArgs != null) {
+                boolean joined = createLobby(lobbyArgs);
+                if(joined) {
+                    inLobby = true;
+                    SwingUtilities.invokeLater(() -> {
+                        this.remove(currentPanel);
+                        currentPanel = getHoldingRoomPanel();
+                        this.add(currentPanel);
+                        this.repaint();
+                    });
+                }
+            }
         });
 
         buttons[2] = new JButton("Refresh Lobbies List");
@@ -176,7 +203,7 @@ public class Client extends JFrame {
 
         buttons[3] = new JButton("About Skribbl");
         buttons[3].addActionListener((ae) -> {
-            JOptionPane.showMessageDialog(this, "\"skribbl.io is a free online multiplayer drawing and guessing pictionary game.\" This program is a remake of the famous game in Java with Swing/Sockets.\nCreated by Abhay, Sameer, and James.", "About Skribbl", JOptionPane.INFORMATION_MESSAGE);
+            showMessageDialog("\"skribbl.io is a free online multiplayer drawing and guessing pictionary game.\" This program is a remake of the famous game in Java with Swing/Sockets.\nCreated by Abhay, Sameer, and James.", "About Skribbl", JOptionPane.INFORMATION_MESSAGE);
         });
         
         buttons[4] = new JButton("Quit Skribbl");
@@ -196,6 +223,31 @@ public class Client extends JFrame {
         toRet.add(options, BorderLayout.EAST);
 
         return toRet;
+    }
+
+    private boolean createLobby(String[] args) {
+        if(args.length == 1) {
+            LobbyInitPack lip = new LobbyInitPack(args[0]);
+            try {
+                sendDataPackage(lip, MessageType.LOBBY_INIT);
+                String json = readJSONDataToString(MessageType.LOBBY_INIT);
+                lip = LobbyInitPack.fromJSON(json);
+                return lip.isSuccess();
+            } catch(Exception e) {
+                showMessageDialog("Failed to send lobby creation request", "Network Error", JOptionPane.ERROR_MESSAGE);
+                return false;
+            }
+        } else if(args.length == 2) {
+            // TODO: Implement private lobbies
+            try {
+                return false;
+            } catch(Exception e) {
+                showMessageDialog("Failed to send lobby creation request", "Network Error", JOptionPane.ERROR_MESSAGE);
+                return false;
+            }
+        }
+        showMessageDialog("Invalid argument number to createLobby()", "Internal error", JOptionPane.ERROR_MESSAGE);
+        return false;
     }
 
     private String[] promptForCreateLobbyArgs() {
@@ -238,12 +290,12 @@ public class Client extends JFrame {
             } else if(privateLobbyCheck.isSelected() && !lobbyName.isEmpty() && !lobbyPass.isEmpty()) {
                 return new String[]{ lobbyName, lobbyPass };
             } else {
-                JOptionPane.showMessageDialog(null, "Invalid input. Please enter a lobby name and if private lobby is selected, a password", "Invalid Input", JOptionPane.ERROR_MESSAGE);
+                showMessageDialog("Invalid input. Please enter a lobby name and if private lobby is selected, a password", "Invalid Input", JOptionPane.ERROR_MESSAGE);
                 return null;
             }
         }
 
-        JOptionPane.showMessageDialog(null, "User did not proceed with lobby creation.", "Lobby Creation Cancelled", JOptionPane.CANCEL_OPTION);
+        showMessageDialog("User did not proceed with lobby creation.", "Lobby Creation Cancelled", JOptionPane.CANCEL_OPTION);
         return null;
     
     }
@@ -259,17 +311,17 @@ public class Client extends JFrame {
             label.setFont(label.getFont().deriveFont(30.0f));
             label.setAlignmentX(JLabel.CENTER_ALIGNMENT);
             listContent.add(label);
-        } else {
-            for (int i = 0; i < lobs.size(); i++) {
-                JPanel pan = new JPanel();
-                
-                listContent.add(pan);
-            }
-        }
 
-        JScrollPane scrollPane = new JScrollPane(listContent);
-        scrollPane.setPreferredSize(d);
-        return scrollPane;
+            JScrollPane scrollPane = new JScrollPane(listContent);
+            scrollPane.setPreferredSize(d);
+            return scrollPane;
+        }
+        JScrollPane jsp = new JScrollPane();
+
+        // TODO: Implement Lobbies Screen
+
+        return jsp;
+        
     }
 
     // Network Request to get lobbies from server. Returns ArrayList of [Lobby Name, Player Count, Hostname]
@@ -279,23 +331,28 @@ public class Client extends JFrame {
         try {
             sendDataPackage(llp, MessageType.LOBBY_LIST);
 
-            String receivedJsonString = RawPacketHandler.readRawPacket(reader);
+            String dataString = readJSONDataToString(MessageType.LOBBY_LIST);
 
-            JSONObject receivedJsonObject = new JSONObject(receivedJsonString);
-            String type = receivedJsonObject.getString("type");
-            
-            if(MessageType.valueOf(type) != MessageType.LOBBY_LIST) {
-                throw new Exception("Invalid MessageType in request");
-            }
-
-            String innerDataString = receivedJsonObject.getJSONObject("data").toString();
-            llp = LobbyListPack.fromJSON(innerDataString);
+            llp = LobbyListPack.fromJSON(dataString);
             toRet = llp.getLobbies();
         } catch(Exception e) {
             llp = null;
             JOptionPane.showMessageDialog(this, "Failed to fetch list of lobbies. Try refreshing or restarting the app. The server may also be corrupt.", "Failed to Fetch Lobbies", JOptionPane.ERROR_MESSAGE);
         }
         return toRet;
+    }
+
+    private String readJSONDataToString(MessageType mt) throws Exception {
+        String receivedJsonString = RawPacketHandler.readRawPacket(reader);
+
+        JSONObject receivedJsonObject = new JSONObject(receivedJsonString);
+        String type = receivedJsonObject.getString("type");
+        
+        if(MessageType.valueOf(type) != mt) {
+            throw new Exception("Invalid MessageType in request");
+        }
+
+        return receivedJsonObject.getJSONObject("data").toString();
     }
 
     private void sendDataPackage(DataPackage dp, MessageType type) throws IOException {
@@ -312,14 +369,43 @@ public class Client extends JFrame {
     private synchronized void exitProgram() {
         try {
             runningProgram = false;
-            writer.close();
-            reader.close();
-            socket.close();
             if(networkThread != null && networkThread.isAlive()) networkThread.join();
+            if(writer != null) writer.close();
+            if(reader != null) reader.close();
+            if(socket != null) socket.close();
         } catch(Exception ex) {
-            System.out.println("Error while disconnecting from server: " + ex);
+            System.err.println("Error while disconnecting from server: " + ex);
         }
         this.dispose();
+        this.setVisible(false);
+        System.exit(0);
+    }
+
+    private void showMessageDialog(String msg, String titleMsg, int errorCode) {
+        showMessageDialog(msg, titleMsg, errorCode, true);
+    }
+    private void showMessageDialog(String msg, String titleMsg, int errorCode, boolean invokeLater) {
+        if(invokeLater) {
+            SwingUtilities.invokeLater(() -> {
+                openDialogs++;
+                if(openDialogs < 2) {
+                    JOptionPane.showMessageDialog(this, msg, titleMsg, errorCode);
+                } else {
+                    System.err.println("Too many error dialogs called...");
+                    System.exit(1);
+                }
+                openDialogs--;
+            });
+        } else {
+            openDialogs++;
+            if(openDialogs < 2) {
+                JOptionPane.showMessageDialog(this, msg, titleMsg, errorCode);
+            } else {
+                System.err.println("Too many error dialogs called...");
+                System.exit(1);
+            }
+            openDialogs--;
+        }
     }
 
     private class ClientNetworkHandler implements Runnable {
@@ -329,16 +415,21 @@ public class Client extends JFrame {
         @Override
         public void run() {
             while(runningProgram) {
+                
                 try {
+                    if(!socket.isConnected() || socket.isClosed()) {
+                        throw new IOException("Socket connection has been lost...");
+                    }
                     long now = java.time.Instant.now().toEpochMilli();
-                    if(now - lastPingRequest > 15000) {
-                        sendDataPackage(new KeepAlivePack(true), MessageType.KEEP_ALIVE);
+                    if(/* !socket.isConnected() && */ now - lastPingRequest > 15000) {
+                        sendDataPackage(new KeepAlivePack(), MessageType.KEEP_ALIVE);
                         lastPingRequest = now;
                     }
                 } catch(IOException ioe) {
-                    SwingUtilities.invokeLater(() -> {
-                        JOptionPane.showMessageDialog(thisPanel, "Failed to send keep alive request, You may be kicked shortly...", "Network Error", JOptionPane.ERROR_MESSAGE);
-                    });
+                    // ioe.printStackTrace();
+                    runningProgram = false;
+                    showMessageDialog("Failed to send keep alive request, Program will end shortly...", "Network Error", JOptionPane.ERROR_MESSAGE);
+                    System.exit(0);
                 }
             }
         }

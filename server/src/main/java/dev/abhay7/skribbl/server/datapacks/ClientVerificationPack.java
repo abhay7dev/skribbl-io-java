@@ -12,39 +12,50 @@ public class ClientVerificationPack extends DataPackage {
 
     private String verificationString;
     private String username;
+    private boolean success;
 
-    private ClientVerificationPack(boolean isServerRequest, String vs, String username) {
+    private ClientVerificationPack(boolean isServerRequest, String vs, String username, boolean success) {
         super(isServerRequest);
         this.verificationString = vs;
         this.username = username;
+        this.success = success;
     }
-
+    
     public ClientVerificationPack(String vs) {
-        this(false, vs, "");
+        this(false, vs, "", false);
     }
-
     public ClientVerificationPack(String vs, String username) {
-        this(true, vs, username);
+        this(true, vs, username, false);
+    }
+    public ClientVerificationPack(boolean success) {
+        this(false, null, null, success);
     }
 
     public String getVerificationString() { return this.verificationString; }
     public String getUsername() { return this.username; }
+    public boolean isSuccess() { return this.success; }
 
     public static ClientVerificationPack fromJSON(String json) throws JSONException {
         JSONObject jo = new JSONObject(json);
         boolean isServerRequest = jo.getBoolean("isServerRequest");
-        String vs = jo.getString("verificationString");
-        if(isServerRequest) {
+        boolean isSuccess = jo.getBoolean("isSuccess");
+
+        if(isServerRequest && jo.has("verificationString")) {
             String uname = jo.getString("username");
-            return new ClientVerificationPack(vs, uname);
+            return new ClientVerificationPack(jo.getString("verificationString"), uname);
+        } else {
+            if(isSuccess == false && jo.has("verificationString")) {
+                return new ClientVerificationPack(jo.getString("verificationString"));
+            }
         }
-        return new ClientVerificationPack(vs);
+        return new ClientVerificationPack(isSuccess);
     }
 
     @Override
     public JSONObject toJSON() {
         JSONObject jo = new JSONObject();
         jo.put("isServerRequest", this.isServerRequest());
+        jo.put("isSuccess", this.isSuccess());
         jo.put("verificationString", this.getVerificationString());
         if(this.isServerRequest()) jo.put("username", this.getUsername());
         return jo;

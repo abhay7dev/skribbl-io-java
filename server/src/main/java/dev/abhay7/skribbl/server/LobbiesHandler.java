@@ -24,8 +24,7 @@ public class LobbiesHandler {
     }
 
     public void removeLobby(Lobby oLob) {
-        if(oLob == null) return;
-        else lobbiesList.remove(oLob);
+        if(oLob != null) lobbiesList.remove(oLob);
     }
 
     public boolean isLobbyNameAvailable(Lobby lob) {

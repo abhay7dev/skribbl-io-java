@@ -10,6 +10,7 @@ public class LobbyJoinPack extends DataPackage {
 
     private boolean success;
     private ArrayList<String> players;
+    private boolean started;
 
     private String lobbyName;
 
@@ -19,10 +20,11 @@ public class LobbyJoinPack extends DataPackage {
         this.success = false;
     }
     // Server response with success being true if usernames are sent
-    public LobbyJoinPack(java.util.ArrayList<String> usernames) {
+    public LobbyJoinPack(java.util.ArrayList<String> usernames, boolean started) {
         super(false);
         this.success = true;
         this.players = usernames;
+        this.started = started;
     }
 
     // This is what client sends to join a specific lobby
@@ -33,6 +35,7 @@ public class LobbyJoinPack extends DataPackage {
 
     public String getLobbyName() { return this.lobbyName; }
     public boolean isSuccess() { return this.success; }
+    public boolean isStarted() { return this.started; }
     public ArrayList<String> getPlayers() { return this.players; }
     
     public static LobbyJoinPack fromJSON(String json) throws JSONException {
@@ -48,13 +51,13 @@ public class LobbyJoinPack extends DataPackage {
         // Client will recieve this from server
         boolean success = jo.getBoolean("success");
         if (success) {
-            org.json.JSONArray arr = jo.getJSONArray("players");
+            JSONArray arr = jo.getJSONArray("players");
             java.util.ArrayList<String> players = new java.util.ArrayList<>();
             for (int i = 0; i < arr.length(); i++) {
                 players.add(arr.getString(i));
             }
             // Succesful Join
-            return new LobbyJoinPack(players);
+            return new LobbyJoinPack(players, jo.getBoolean("started"));
         }
         
         // Failed join
@@ -79,6 +82,7 @@ public class LobbyJoinPack extends DataPackage {
                     arr.put(p);
                 }
                 jo.put("players", arr);
+                jo.put("started", this.isStarted());
             }
         }
 

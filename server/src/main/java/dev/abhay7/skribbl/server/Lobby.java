@@ -12,11 +12,14 @@ public class Lobby {
     private String name;
     private Server.ClientCommsHandler host;
 
+    private boolean started;
+
     private CopyOnWriteArrayList<Server.ClientCommsHandler> clients;
 
     public Lobby(String name, Server.ClientCommsHandler host) {
         this.name = name;
         this.host = host;
+        this.started = false;
         clients = new CopyOnWriteArrayList<Server.ClientCommsHandler>();
         clients.add(this.host);
     }
@@ -49,8 +52,12 @@ public class Lobby {
         this.clients.add(cch);
     }
 
-    public void removeClient(Server.ClientCommsHandler cch) {
+    public synchronized void removeClient(Server.ClientCommsHandler cch) {
         this.clients.remove(cch);
+        if(this.host == cch) {
+            this.host = null;
+            if(this.getClients().size() > 0) this.host = this.clients.get(0);
+        }
     }
 
     public void setHost(Server.ClientCommsHandler cch) {
@@ -64,5 +71,13 @@ public class Lobby {
         }
         return toRet;
     }
+
+    public ArrayList<Server.ClientCommsHandler> getClients() {
+        return new ArrayList<Server.ClientCommsHandler>(this.clients);
+    }
+
+    public boolean isStarted() { return this.started; }
+    public void start() { this.started = true; }
+    public void stop() { this.started = false; }
     
 }

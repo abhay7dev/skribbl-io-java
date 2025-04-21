@@ -38,7 +38,7 @@ public class LobbyInitPack extends DataPackage {
     @Override
     public JSONObject toJSON() {
         JSONObject jo = new JSONObject();
-        jo.put("isRequest", this.isServerRequest());
+        jo.put("isServerRequest", this.isServerRequest());
 
         if (this.isServerRequest()) {
             jo.put("lobName", this.getLobName());

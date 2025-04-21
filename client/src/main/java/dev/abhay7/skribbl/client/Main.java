@@ -25,7 +25,7 @@ public class Main {
         String[] toRet = new String[3];
         toRet[0] = ""; toRet[1] = ""; toRet[2] = "0";
 
-        JTextField usernameField = new JTextField("Username");
+        JTextField usernameField = new JTextField("Username-" + ((char) (((int) (Math.random() * 26)) + 65)) + ((char) (((int) (Math.random() * 26)) + 65)) + ((char) (((int) (Math.random() * 26)) + 65)));
         JTextField serverField = new JTextField("localhost:8080");
 
         JPanel dialogPanel = new JPanel();
