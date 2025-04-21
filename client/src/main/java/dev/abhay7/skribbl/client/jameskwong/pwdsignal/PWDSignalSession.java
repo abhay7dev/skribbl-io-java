@@ -12,6 +12,8 @@ import org.bouncycastle.crypto.digests.SHA256Digest;
 public class PWDSignalSession {
     private static final JPAKEPrimeOrderGroup jpakePrimeOrderGroup = JPAKEPrimeOrderGroups.NIST_3072;
 
+    private PWDSignalSessionState state;
+
     private final SecureRandom random;
 
     private final String jpakeUserID;
@@ -24,6 +26,8 @@ public class PWDSignalSession {
         log("JPAKE User Identifier: " + jpakeUserID);
 
         jpake = new JPAKEParticipant(jpakeUserID, password.toCharArray(), jpakePrimeOrderGroup, SHA256Digest.newInstance(), random);
+        
+        state = PWDSignalSessionState.INITIALIZED;
     }
 
     
