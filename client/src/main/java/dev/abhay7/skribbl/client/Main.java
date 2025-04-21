@@ -14,7 +14,8 @@ public class Main {
 
     public static void main(String[] args) {
         SwingUtilities.invokeLater(() -> {
-            FlatDarkLaf.setup();
+            // FlatIntelliJLaf.registerCustomDefaultsSource("style");
+            FlatIntelliJLaf.setup();
             String[] gameArgs = promptForStartupData();
             if(gameArgs.length < 3 || gameArgs[2].equals("0")) System.exit(0);
             new Client(gameArgs);

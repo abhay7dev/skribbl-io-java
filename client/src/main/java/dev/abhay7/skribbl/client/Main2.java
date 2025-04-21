@@ -16,7 +16,6 @@ import java.net.URISyntaxException;
 import java.net.URL;
 
 import com.formdev.flatlaf.*;
-import java.net.*;
 
 /*
  * PLANS:
@@ -74,7 +73,7 @@ public class Main2 extends JPanel {
          */
         ArrayList<String> textMessages = new ArrayList<String>();
 
-        Border border = BorderFactory.createLineBorder(Color.black);
+        // Border border = BorderFactory.createLineBorder(Color.black);
 
         //JFrame serverList = new JFrame("Lobby List");
 

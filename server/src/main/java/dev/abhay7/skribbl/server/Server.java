@@ -285,7 +285,7 @@ public class Server {
                     LobbyListPack toSend = LobbyListPack.getFromLobbies(lobbies.getLobbyArrayList());
                     try {
                         this.sendDataPackage(toSend, MessageType.LOBBY_LIST);
-                        System.out.println("Sent LobbyListPack with lobbies list to " + this.socketId);
+                        System.out.println("Sent LobbyListPack with lobbies list to " + this.username);
                     } catch (Exception e) {
                         System.out.println("Failed to send LobbyListPack to client: " + e);
                     }
@@ -298,6 +298,7 @@ public class Server {
                     try {
                         lob = new Lobby(p, this);
                         lobbies.addLobby(lob);
+
                         sendDataPackage(new LobbyInitPack(true), MessageType.LOBBY_INIT);
                         this.currentLobby = lob;
                     } catch (IllegalArgumentException iae) {
@@ -356,7 +357,7 @@ public class Server {
                         WordsFetchPack toSend = new WordsFetchPack(wordList);
                         try {
                             this.sendDataPackage(toSend, MessageType.FETCH_WORDLIST);
-                            System.out.println("Sent WordsFetchPack with words list to " + this.socketId);
+                            System.out.println("Sent WordsFetchPack with words list to " + this.username);
                         } catch (Exception e) {
                             System.out.println("Failed to send LobbyListPacket to client: " + e);
                         }
