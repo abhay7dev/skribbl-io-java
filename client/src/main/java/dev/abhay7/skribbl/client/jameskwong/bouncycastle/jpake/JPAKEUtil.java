@@ -1,15 +1,12 @@
-package org.bouncycastle.crypto.agreement.jpake;
+package dev.abhay7.skribbl.client.jameskwong.bouncycastle.jpake;
 
 import java.math.BigInteger;
 import java.security.SecureRandom;
 
-import org.bouncycastle.crypto.CryptoException;
 import org.bouncycastle.crypto.Digest;
 import org.bouncycastle.crypto.Mac;
 import org.bouncycastle.crypto.macs.HMac;
 import org.bouncycastle.crypto.params.KeyParameter;
-import org.bouncycastle.util.Arrays;
-import org.bouncycastle.util.BigIntegers;
 import org.bouncycastle.util.Strings;
 
 /**
@@ -70,12 +67,12 @@ public class JPAKEUtil
      * Converts the given password to a {@link BigInteger} mod q.
      */
     public static BigInteger calculateS(BigInteger q, byte[] password)
-        throws CryptoException
+        throws Exception
     {
         BigInteger s = new BigInteger(1, password).mod(q);
         if (s.signum() == 0)
         {
-            throw new CryptoException("MUST ensure s is not equal to 0 modulo q");
+            throw new Exception("MUST ensure s is not equal to 0 modulo q");
         }
         return s;
     }
@@ -84,7 +81,7 @@ public class JPAKEUtil
      * Converts the given password to a {@link BigInteger} mod q.
      */
     public static BigInteger calculateS(BigInteger q, char[] password)
-        throws CryptoException
+        throws Exception
     {
         return calculateS(q, Strings.toUTF8ByteArray(password));
     }
@@ -196,14 +193,14 @@ public class JPAKEUtil
     /**
      * Validates that g^x4 is not 1.
      *
-     * @throws CryptoException if g^x4 is 1
+     * @throws Exception if g^x4 is 1
      */
     public static void validateGx4(BigInteger gx4)
-        throws CryptoException
+        throws Exception
     {
         if (gx4.equals(ONE))
         {
-            throw new CryptoException("g^x validation failed.  g^x should not be 1.");
+            throw new Exception("g^x validation failed.  g^x should not be 1.");
         }
     }
 
@@ -218,14 +215,14 @@ public class JPAKEUtil
      * Hence, the probability for ga = 1 is extremely small - on the order of 2^160 for 160-bit q.
      * </blockquote>
      *
-     * @throws CryptoException if ga is 1
+     * @throws Exception if ga is 1
      */
     public static void validateGa(BigInteger ga)
-        throws CryptoException
+        throws Exception
     {
         if (ga.equals(ONE))
         {
-            throw new CryptoException("ga is equal to 1.  It should not be.  The chances of this happening are on the order of 2^160 for a 160-bit q.  Try again.");
+            throw new Exception("ga is equal to 1.  It should not be.  The chances of this happening are on the order of 2^160 for a 160-bit q.  Try again.");
         }
     }
 
@@ -234,7 +231,7 @@ public class JPAKEUtil
      * {@link #calculateZeroKnowledgeProof(BigInteger, BigInteger, BigInteger, BigInteger, BigInteger, String, Digest, SecureRandom)})
      * is correct.
      *
-     * @throws CryptoException if the zero knowledge proof is not correct
+     * @throws Exception if the zero knowledge proof is not correct
      */
     public static void validateZeroKnowledgeProof(
         BigInteger p,
@@ -244,7 +241,7 @@ public class JPAKEUtil
         BigInteger[] zeroKnowledgeProof,
         String participantId,
         Digest digest)
-        throws CryptoException
+        throws Exception
     {
 
         /* sig={g^v,r} */
@@ -262,7 +259,7 @@ public class JPAKEUtil
                  */
             g.modPow(r, p).multiply(gx.modPow(h, p)).mod(p).compareTo(gv) == 0)) // g^v=g^r * g^x^h
         {
-            throw new CryptoException("Zero-knowledge proof validation failed");
+            throw new Exception("Zero-knowledge proof validation failed");
         }
     }
 
@@ -289,14 +286,14 @@ public class JPAKEUtil
      * Validates that the given participant ids are not equal.
      * (For the J-PAKE exchange, each participant must use a unique id.)
      *
-     * @throws CryptoException if the participantId strings are equal.
+     * @throws Exception if the participantId strings are equal.
      */
     public static void validateParticipantIdsDiffer(String participantId1, String participantId2)
-        throws CryptoException
+        throws Exception
     {
         if (participantId1.equals(participantId2))
         {
-            throw new CryptoException(
+            throw new Exception(
                 "Both participants are using the same participantId ("
                     + participantId1
                     + "). This is not allowed. "
@@ -309,14 +306,14 @@ public class JPAKEUtil
      * This is used to ensure that the payloads received from
      * each round all come from the same participant.
      *
-     * @throws CryptoException if the participantId strings are equal.
+     * @throws Exception if the participantId strings are equal.
      */
     public static void validateParticipantIdsEqual(String expectedParticipantId, String actualParticipantId)
-        throws CryptoException
+        throws Exception
     {
         if (!expectedParticipantId.equals(actualParticipantId))
         {
-            throw new CryptoException(
+            throw new Exception(
                 "Received payload from incorrect partner ("
                     + actualParticipantId
                     + "). Expected to receive payload from "
@@ -422,7 +419,7 @@ public class JPAKEUtil
      * Validates the MacTag received from the partner participant.
      *
      * @param partnerMacTag the MacTag received from the partner.
-     * @throws CryptoException if the participantId strings are equal.
+     * @throws Exception if the participantId strings are equal.
      */
     public static void validateMacTag(
         String participantId,
@@ -434,7 +431,7 @@ public class JPAKEUtil
         BigInteger keyingMaterial,
         Digest digest,
         BigInteger partnerMacTag)
-        throws CryptoException
+        throws Exception
     {
         /*
          * Calculate the expected MacTag using the parameters as the partner
@@ -457,7 +454,7 @@ public class JPAKEUtil
 
         if (!expectedMacTag.equals(partnerMacTag))
         {
-            throw new CryptoException(
+            throw new Exception(
                 "Partner MacTag validation failed. "
                     + "Therefore, the password, MAC, or digest algorithm of each participant does not match.");
         }

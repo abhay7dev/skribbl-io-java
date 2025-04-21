@@ -1,4 +1,4 @@
-package org.bouncycastle.crypto.agreement.jpake;
+package dev.abhay7.skribbl.client.jameskwong.bouncycastle.jpake;
 
 import java.math.BigInteger;
 

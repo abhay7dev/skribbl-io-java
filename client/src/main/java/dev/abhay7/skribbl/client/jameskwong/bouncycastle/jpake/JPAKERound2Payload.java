@@ -1,8 +1,6 @@
-package org.bouncycastle.crypto.agreement.jpake;
+package dev.abhay7.skribbl.client.jameskwong.bouncycastle.jpake;
 
 import java.math.BigInteger;
-
-import org.bouncycastle.util.Arrays;
 
 /**
  * The payload sent/received during the second round of a J-PAKE exchange.

@@ -3,7 +3,7 @@ package dev.abhay7.skribbl.client.jameskwong.bouncycastle.jpake;
 import java.math.BigInteger;
 import java.security.SecureRandom;
 
-import org.bouncycastle.crypto.CryptoException;
+import org.bouncycastle.crypto.Exception;
 import org.bouncycastle.crypto.CryptoServicesRegistrar;
 import org.bouncycastle.crypto.Digest;
 import org.bouncycastle.crypto.digests.SHA256Digest;
@@ -300,11 +300,11 @@ public class JPAKEParticipant
      * <p>
      * After execution, the {@link #getState() state} will be  {@link #STATE_ROUND_1_VALIDATED}.
      *
-     * @throws CryptoException if validation fails.
+     * @throws Exception if validation fails.
      * @throws IllegalStateException if called multiple times.
      */
     public void validateRound1PayloadReceived(JPAKERound1Payload round1PayloadReceived)
-        throws CryptoException
+        throws Exception
     {
         if (this.state >= STATE_ROUND_1_VALIDATED)
         {
@@ -366,11 +366,11 @@ public class JPAKEParticipant
      * <p>
      * After execution, the {@link #getState() state} will be  {@link #STATE_ROUND_2_VALIDATED}.
      *
-     * @throws CryptoException if validation fails.
+     * @throws Exception if validation fails.
      * @throws IllegalStateException if called prior to {@link #validateRound1PayloadReceived(JPAKERound1Payload)}, or multiple times
      */
     public void validateRound2PayloadReceived(JPAKERound2Payload round2PayloadReceived)
-        throws CryptoException
+        throws Exception
     {
         if (this.state >= STATE_ROUND_2_VALIDATED)
         {
@@ -506,11 +506,11 @@ public class JPAKEParticipant
      *
      * @param round3PayloadReceived The round 3 payload received from the other participant.
      * @param keyingMaterial The keying material as returned from {@link #calculateKeyingMaterial()}.
-     * @throws CryptoException if validation fails.
+     * @throws Exception if validation fails.
      * @throws IllegalStateException if called prior to {@link #calculateKeyingMaterial()}, or multiple times
      */
     public void validateRound3PayloadReceived(JPAKERound3Payload round3PayloadReceived, BigInteger keyingMaterial)
-        throws CryptoException
+        throws Exception
     {
         if (this.state >= STATE_ROUND_3_VALIDATED)
         {
@@ -552,9 +552,9 @@ public class JPAKEParticipant
         {
             return JPAKEUtil.calculateS(q, password);
         }
-        catch (CryptoException e)
+        catch (Exception e)
         {
-            throw Exceptions.illegalStateException(e.getMessage(), e);
+            throw new IllegalStateException(e.getMessage(), e);
         }
     }
 }
