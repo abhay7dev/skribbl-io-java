@@ -1,4 +1,4 @@
-package dev.abhay7.skribbl.client;
+package dev.abhay7.skribbl.client.sameer;
 
 import java.awt.*;
 import java.awt.event.ActionEvent;
@@ -210,7 +210,7 @@ public class Main2 extends JPanel {
 
         JTextField cField = new JTextField(10);
         JButton cButton = new JButton("Send");
-        cButton.addActionListener(e -> {
+        cButton.addActionListener((_) -> {
             String in = cField.getText();
             if (!in.equals("")) textMessages.add(main.player.getName() + ": " + in);
             cField.setText("");
@@ -377,7 +377,7 @@ public class Main2 extends JPanel {
         JLabel nameLabel = new JLabel(name);
         JButton joinButton = new JButton("Join Server");
 
-        joinButton.addActionListener(e -> {
+        joinButton.addActionListener((_) -> {
             boolean in = true;
 
             if (sType.equals("protected")) {

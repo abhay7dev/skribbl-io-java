@@ -1,6 +1,7 @@
-package dev.abhay7.skribbl.client;
+package dev.abhay7.skribbl.client.sameer;
 
 import javax.swing.*;
+
 import java.awt.*;
 import java.awt.image.BufferedImage;
 // import java.io.FileOutputStream;

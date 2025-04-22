@@ -334,7 +334,7 @@ public class Server {
                             this.currentLobby = lob;
                             
                             System.out.println("Notifying all except sender (" + this.username + ")");
-                            lob.notifyAllExceptSender(dataPackage, this, MessageType.LOBBY_JOIN);
+                            lob.notifyAllExceptSender(new LobbyJoinPack(lob.getPlayerNames(), lob.isStarted()), this, MessageType.LOBBY_JOIN);
                         } catch (Exception e) {
                             System.out.println("Failed to notify about joining lobby");
                             lob.removeClient(this);

@@ -46,14 +46,14 @@ public class Main {
             String username = usernameField.getText().trim();
             String serverInput = serverField.getText().trim();
 
-            if (!username.isEmpty() && serverInput.matches("^.+:\\d+$")) {
+            if (!username.isEmpty() && serverInput.matches("^.+:\\d+$") && username.length() < 15) {
                 String[] parts = serverInput.split(":");
                 
                 toRet[0] = username;
                 toRet[1] = parts[0];
                 toRet[2] = Integer.parseInt(parts[1]) + "";
             } else {
-                JOptionPane.showMessageDialog(null, "Invalid input. Please enter a username and server in IP:PORT format.", "Input Error", JOptionPane.ERROR_MESSAGE);
+                JOptionPane.showMessageDialog(null, "Invalid input. Please enter a username (less than 15 characters) and server in IP:PORT format.", "Input Error", JOptionPane.ERROR_MESSAGE);
             }
         } else {
             JOptionPane.showMessageDialog(null, "User did not proceed with connection.");

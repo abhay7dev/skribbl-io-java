@@ -21,6 +21,7 @@ import javax.swing.JFrame;
 import javax.swing.JLabel;
 import javax.swing.JOptionPane;
 import javax.swing.JPanel;
+import javax.swing.JScrollPane;
 import javax.swing.JTextField;
 import javax.swing.SwingUtilities;
 import javax.swing.border.EmptyBorder;
@@ -50,6 +51,7 @@ public class Client extends JFrame {
     private boolean runningProgram;
 
     private JPanel currentPanel;
+    private JPanel usersPanel;
 
     private boolean isInLobby;
     private boolean isHost;
@@ -172,21 +174,21 @@ public class Client extends JFrame {
         
         // Create Lobby button
         buttons[0] = new JButton("Create Lobby");
-        buttons[0].addActionListener((e) -> { createLobby(); });
+        buttons[0].addActionListener((_) -> { createLobby(); });
         
         // Refresh button to reacquire lobbies
         buttons[1] = new JButton("Refresh Lobbies");
-        buttons[1].addActionListener((ae) -> { updateLobbiesListPanel(lobbiesListPanel, lobbiesDims); });
+        buttons[1].addActionListener((_) -> { updateLobbiesListPanel(lobbiesListPanel, lobbiesDims); });
         
         // About Button to give info about program
         buttons[2] = new JButton("About Skribbl");
-        buttons[2].addActionListener((ae) -> {
+        buttons[2].addActionListener((_) -> {
             showMessageDialog("\"skribbl.io is a free online multiplayer drawing and guessing pictionary game.\" This program is a remake of the famous game in Java with Swing/Sockets.\nCreated by Abhay, Sameer, and James.", "About Skribbl", JOptionPane.INFORMATION_MESSAGE);
         });
         
         // Quit Program button
         buttons[3] = new JButton("Quit Skribbl");
-        buttons[3].addActionListener((ae) -> { exitProgram(); });
+        buttons[3].addActionListener((_) -> { exitProgram(); });
         
         // Add buttons to options panel
         for(JButton button: buttons) {
@@ -236,9 +238,7 @@ public class Client extends JFrame {
                 jb.add(new JLabel("Players: "+ lob[1]));
                 jb.setAlignmentX(JButton.CENTER_ALIGNMENT);
                 jb.setPreferredSize(new Dimension((int) (d.getWidth() / 3.5), (int) d.getHeight() / 7));
-                jb.addActionListener((ae) -> {
-                    joinPublicLobby(lob[0]);
-                });
+                jb.addActionListener((_) -> { joinPublicLobby(lob[0]); });
                 components.add(jb);
             }
         }
@@ -275,6 +275,7 @@ public class Client extends JFrame {
                 this.remove(currentPanel);
                 currentPanel = getGamePanel(lobbyName, this.usersInGame, ljp.isStarted());
                 this.add(currentPanel);
+                this.revalidate();
                 this.repaint();
             });
         }
@@ -309,6 +310,7 @@ public class Client extends JFrame {
                     this.remove(currentPanel);
                     currentPanel = getGamePanel(lobbyArgs[0]);
                     this.add(currentPanel);
+                    this.revalidate();
                     this.repaint();
                 });
             }
@@ -348,7 +350,7 @@ public class Client extends JFrame {
         JTextField lobbyPasswordField = new JTextField("");
         
         lobbyPasswordField.setEnabled(false);
-        privateLobbyCheck.addActionListener((e) -> {
+        privateLobbyCheck.addActionListener((_) -> {
             lobbyPasswordField.setEnabled(privateLobbyCheck.isSelected());
         });
         
@@ -399,11 +401,47 @@ public class Client extends JFrame {
 
     private JPanel getGamePanel(String lobName, ArrayList<String> players, boolean isStarted) {
         JPanel toRet = new JPanel();
+        toRet.setLayout(new BorderLayout(10, 10));
+        toRet.setPreferredSize(new Dimension(WIDTH, HEIGHT));
+
+        usersPanel = new JPanel();
+        usersPanel.setLayout(new BoxLayout(usersPanel, BoxLayout.Y_AXIS));
+        usersPanel.setPreferredSize(new Dimension(WIDTH / 5, HEIGHT - 45));
+        // usersPanel.setMinimumSize(new Dimension(WIDTH / 5, HEIGHT));
+
+        for(String p: players) {
+            usersPanel.add(new JLabel(p.equals(this.username) ? p + " (You)" : p));
+        }
+        
+        JScrollPane usersScrollPane = new JScrollPane(usersPanel);
+        // usersScrollPane.setPreferredSize(new Dimension(WIDTH / 5, HEIGHT));
+        usersScrollPane.setVerticalScrollBarPolicy(JScrollPane.VERTICAL_SCROLLBAR_AS_NEEDED);
+        usersScrollPane.setHorizontalScrollBarPolicy(JScrollPane.HORIZONTAL_SCROLLBAR_NEVER);
+
+        toRet.add(usersScrollPane, BorderLayout.WEST);
+
+
+
         return toRet;
     }
 
     private void leaveLobby() {
-
+        if(this.isInLobby) {
+            LobbyLeavePack llp = new LobbyLeavePack();
+            try {
+                sendDataPackage(llp, MessageType.LOBBY_LEAVE);
+            } catch(Exception e) {
+                showMessageDialog("Failed to leave lobby... You will likely be removed from the server shortly.", "Network Error", JOptionPane.ERROR_MESSAGE);
+            }
+            this.isInLobby = false;
+            this.isHost = false;
+        }
+        usersPanel = null;
+        this.remove(currentPanel);
+        currentPanel = getLobbiesPanel();
+        this.add(currentPanel);
+        this.revalidate();
+        this.repaint();
     }
     
     // Helper method to read json to a string
@@ -481,8 +519,12 @@ public class Client extends JFrame {
 
         private long lastPingRequest = java.time.Instant.now().toEpochMilli();
 
+        private Thread gameThread;
+        private GameNetworkHandler gnh;
+
         @Override
         public void run() {
+
             while(runningProgram) {
                 
                 try {
@@ -494,15 +536,80 @@ public class Client extends JFrame {
                         sendDataPackage(new KeepAlivePack(), MessageType.KEEP_ALIVE);
                         lastPingRequest = now;
                     }
+
                 } catch(IOException ioe) {
                     // ioe.printStackTrace();
                     runningProgram = false;
                     showMessageDialog("Failed to send keep alive request, Program will end shortly...", "Network Error", JOptionPane.ERROR_MESSAGE);
                     System.exit(0);
                 }
+
+                if(isInLobby && gnh == null && gameThread == null) {
+                    gnh = new GameNetworkHandler();
+                    gameThread = new Thread(gnh);
+                    gameThread.start();
+                }
+
+                if(!isInLobby && gnh != null && gameThread != null) {
+                    try {
+                        gameThread.join();
+                        gnh = null;
+                        gameThread = null;
+                    } catch(Exception e) {
+                        runningProgram = false;
+                        showMessageDialog("Fatal error. Failed to stop game network Thread. Program will end shortly...", "Fatall Error", JOptionPane.ERROR_MESSAGE);
+                        System.exit(0);
+                    }
+                }
+
             }
         }
 
     }
     
+    private class GameNetworkHandler implements Runnable {
+
+        @Override
+        public void run() {
+
+            String receivedJsonString;
+
+            while(isInLobby) {
+                try {
+                    receivedJsonString = RawPacketHandler.readRawPacket(reader);
+
+                    JSONObject obj = new JSONObject(receivedJsonString);
+                    String type = obj.getString("type");
+
+                    JSONObject innerData = obj.getJSONObject("data");
+                    String innerDataString = innerData.toString();
+                    MessageType mt = MessageType.valueOf(type);
+                
+                    if(mt == MessageType.LOBBY_JOIN) {
+                        LobbyJoinPack ljp = LobbyJoinPack.fromJSON(innerDataString);
+                        usersInGame = ljp.getPlayers();
+                        if(usersPanel != null) {
+                            SwingUtilities.invokeLater(() -> {
+                                usersPanel.removeAll();
+                                for(String p: usersInGame) {
+                                    System.out.print(p + "\t");
+                                    usersPanel.add(new JLabel(p.equals(username) ? p + " (You)" : p));
+                                }
+                                usersPanel.revalidate();
+                                usersPanel.repaint();
+                            });
+                        }
+                    }
+                
+                } catch(Exception ioe) {
+                    // ioe.printStackTrace();
+                    runningProgram = false;
+                    showMessageDialog("Failed to read game data. Program will end shortly...", "Network Error", JOptionPane.ERROR_MESSAGE);
+                    System.exit(0);
+                }
+            }
+        }
+
+    }
+
 }
