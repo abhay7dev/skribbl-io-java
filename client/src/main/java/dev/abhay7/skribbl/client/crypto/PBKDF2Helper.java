@@ -21,8 +21,6 @@ public final class PBKDF2Helper {
             
             // need to reformat for AES
 
-            HKDFParameterSpec.ofExtract();
-
             return new SecretKeySpec(result.getEncoded(), "AES");
         }
         catch (Exception e) {

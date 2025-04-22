@@ -48,7 +48,7 @@ public final class AESGCMHelper {
         }   
     }
 
-    public static byte[] decrypt(byte[] aad, byte[] iv, byte[] cipherText, SecretKey key) {
+    public static byte[] decrypt(byte[] aad, byte[] iv, byte[] cipherText, SecretKey key) throws Exception {
         try {
             Cipher cipher = Cipher.getInstance("AES/GCM/NoPadding");
             GCMParameterSpec gcmParameterSpec = new GCMParameterSpec(TAG_LENGTH_BITS, iv);
@@ -66,9 +66,10 @@ public final class AESGCMHelper {
             return cipher.doFinal(cipherText);
         }
         catch (Exception e) {
-            System.out.println("A fatal crypto error while encrypting data with AES-GCM occurred: " + e.getMessage());
-            System.exit(-1);
-            return null;
+            // System.out.println("A fatal crypto error while encrypting data with AES-GCM occurred: " + e.getMessage());
+            // System.exit(-1);
+            // return null;
+            throw e;
         }
     }
 }

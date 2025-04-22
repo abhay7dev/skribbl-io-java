@@ -12,6 +12,7 @@ import javax.crypto.KDF;
 import javax.crypto.SecretKey;
 import javax.crypto.spec.GCMParameterSpec;
 import javax.crypto.spec.HKDFParameterSpec;
+import javax.security.auth.DestroyFailedException;
 
 import dev.abhay7.skribbl.client.crypto.AESGCMHelper;
 
@@ -59,7 +60,7 @@ public class PWDSignalSingleRatchetCipherEngine extends PWDSignalCipherEngine {
                                                             .thenExpand(HKDF_SEND_CHAIN_INIT_INFO, CHAIN_KEY_SIZE);
 
             SecretKey sendChainKey = hkdf.deriveKey(HKDF_ALGORITHM, params);
-
+            // System.out.println("Is send key chain null: " + (sendChainKey == null));
             hkdf = KDF.getInstance(HKDF_ALGORITHM);
 
             params = HKDFParameterSpec.ofExtract()
@@ -85,21 +86,28 @@ public class PWDSignalSingleRatchetCipherEngine extends PWDSignalCipherEngine {
 
     @Override
     public byte[] encryptSendPacket(byte[] message, int offset, int length) throws Exception {
+        // System.out.println("Test");
         KDF hkdf = KDF.getInstance(HKDF_ALGORITHM);
 
         AlgorithmParameterSpec params = HKDFParameterSpec.expandOnly(sendChainKey, HKDF_RATCHET_STEP_CHAIN_KEY_INFO, CHAIN_KEY_SIZE);
         SecretKey newSendChainKey = hkdf.deriveKey(HKDF_ALGORITHM, params);
-
+        // System.out.println("Test2");
         hkdf = KDF.getInstance(HKDF_ALGORITHM);
         params = HKDFParameterSpec.expandOnly(sendChainKey, HKDF_RATCHET_STEP_MESSAGE_KEY_INFO, AES_GCM_KEY_SIZE);
         SecretKey messageKey = hkdf.deriveKey("AES", params);
-
-        sendChainKey.destroy();
-        sendChainKey = newSendChainKey;
-
+        // System.out.println("Test3");
+        // try {
+            // sendChainKey.destroy();
+            sendChainKey = newSendChainKey;
+        // }
+        // catch (DestroyFailedException e) {
+            // System.out.println("WTF: " + e.getMessage());
+        // }
+        
+        // System.out.println("Test3.5");
         byte[] nonce = new byte[AES_GCM_NONCE_SIZE];
         random.nextBytes(nonce);
-
+        // System.out.println("Test4");
         Cipher cipher = Cipher.getInstance("AES/GCM/NoPadding");
         GCMParameterSpec gcmParameterSpec = new GCMParameterSpec(AES_GCM_TAG_LENGTH_BITS, nonce);
         
@@ -113,7 +121,7 @@ public class PWDSignalSingleRatchetCipherEngine extends PWDSignalCipherEngine {
         // }
         
         byte[] cipherText = cipher.doFinal(message, offset, length);
-        messageKey.destroy();
+        // messageKey.destroy();
 
         byte[] result = new byte[cipherText.length + AES_GCM_NONCE_SIZE];
         System.arraycopy(nonce, 0, result, 0, AES_GCM_NONCE_SIZE);
@@ -137,7 +145,7 @@ public class PWDSignalSingleRatchetCipherEngine extends PWDSignalCipherEngine {
         params = HKDFParameterSpec.expandOnly(receiveChainKey, HKDF_RATCHET_STEP_MESSAGE_KEY_INFO, AES_GCM_KEY_SIZE);
         SecretKey messageKey = hkdf.deriveKey("AES", params);
 
-        receiveChainKey.destroy();
+        // receiveChainKey.destroy();
         receiveChainKey = newReceiveChainKey;
 
         byte[] nonce = Arrays.copyOfRange(cipherText, offset, offset + AES_GCM_NONCE_SIZE);
@@ -149,7 +157,7 @@ public class PWDSignalSingleRatchetCipherEngine extends PWDSignalCipherEngine {
         }
         finally {
             // always destroy the messageKey
-            messageKey.destroy();
+            // messageKey.destroy();
         }
     }   
 }
