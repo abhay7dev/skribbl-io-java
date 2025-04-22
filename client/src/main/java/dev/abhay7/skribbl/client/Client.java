@@ -266,14 +266,18 @@ public class Client extends JFrame {
             @Override
             protected Void doInBackground() throws Exception {
                 if(isInLobby) {
+                    isInLobby = false;
                     LobbyLeavePack llp = new LobbyLeavePack();
-                    sendDataPackage(llp, MessageType.LOBBY_LEAVE);   
+                    System.out.println("Sending lobby leave pack");
+                    sendDataPackage(llp, MessageType.LOBBY_LEAVE); 
+                    System.out.println("Waiting to read lobby leave pack response");  
+                    String dataString = readJSONDataToString(MessageType.LOBBY_LEAVE);
+                    System.out.println(dataString);
                 }
                 return null;
             }
 
             protected void done() {
-                isInLobby = false;
                 isHost = false;
                 usersInGame = new ArrayList<String>();
 
@@ -565,13 +569,12 @@ public class Client extends JFrame {
                         protected Void doInBackground() {
                             try {
                                 while (isInLobby && !isCancelled()) {
-                                    // Read from the socket
                                     String packet = RawPacketHandler.readRawPacket(reader);
                                     publish(packet);
                                 }
                             } catch (Exception e) {
                                 backgroundException = e;
-                                cancel(true); // optional, stops processing further
+                                cancel(true);
                             }
                             return null;
                         }

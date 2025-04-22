@@ -359,12 +359,15 @@ public class Server {
                             this.sendDataPackage(toSend, MessageType.FETCH_WORDLIST);
                             System.out.println("Sent WordsFetchPack with words list to " + this.username);
                         } catch (Exception e) {
-                            System.out.println("Failed to send LobbyListPacket to client: " + e);
+                            System.out.println("Failed to send WordsFetchPack to client: " + e);
                         }
                     }
                 } else if(dataPackage instanceof LobbyLeavePack) {
                     try {
                         leaveLobby();
+                        LobbyLeavePack toSend = new LobbyLeavePack(true);
+                        this.sendDataPackage(toSend, MessageType.FETCH_WORDLIST);
+                        System.out.println("Sent LobbyLeavePack with words list to " + this.username);
                     } catch(Exception ioe) {
                         System.out.println("Failed to notify clients that someone left lobby.");
                     }
