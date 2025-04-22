@@ -4,6 +4,7 @@ package dev.abhay7.skribbl.client.crypto;
 
 import javax.crypto.SecretKey;
 import javax.crypto.SecretKeyFactory;
+import javax.crypto.spec.HKDFParameterSpec;
 import javax.crypto.spec.PBEKeySpec;
 import javax.crypto.spec.SecretKeySpec;
 
@@ -19,6 +20,8 @@ public final class PBKDF2Helper {
             SecretKey result = secretKeyFactory.generateSecret(pbeKeySpec);
             
             // need to reformat for AES
+
+            HKDFParameterSpec.ofExtract();
 
             return new SecretKeySpec(result.getEncoded(), "AES");
         }
