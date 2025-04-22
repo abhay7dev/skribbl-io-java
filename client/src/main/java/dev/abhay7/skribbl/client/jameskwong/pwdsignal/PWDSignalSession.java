@@ -30,11 +30,16 @@ public class PWDSignalSession {
     private final String jpakeUserID;
     private final JPAKEParticipant jpake;
 
+    // Whether or not we initiated the connection between the 2 parties
+    private final boolean isConnectionInitiator;
+
     // The raw, shared secret key derived immediately after JPAKE
     // Do not use this as raw keying material--run it through a KDF first
     private BigInteger sharedSecretKey;
 
-    public PWDSignalSession(String password) throws NoSuchAlgorithmException {
+    private PWDSignalCipherEngine cipherEngine;
+
+    public PWDSignalSession(String password, boolean isConnectionInitiator) throws NoSuchAlgorithmException {
         random = SecureRandom.getInstanceStrong();
 
         jpakeUserID = nextHexString(random, 32);
@@ -42,7 +47,10 @@ public class PWDSignalSession {
 
         jpake = new JPAKEParticipant(jpakeUserID, password.toCharArray(), jpakePrimeOrderGroup, SHA256Digest.newInstance(), random);
 
+        this.isConnectionInitiator = isConnectionInitiator;
+
         sharedSecretKey = null;
+        cipherEngine = null;
 
         state = PWDSignalSessionState.INITIALIZED;
     }
@@ -183,11 +191,30 @@ public class PWDSignalSession {
             JPAKERound3Payload payload = new JPAKERound3Payload(participantId, macTag);
             jpake.validateRound3PayloadReceived(payload, sharedSecretKey);
     
+            // At this point, we know client and receiver have been verified as having the right password
+
+            cipherEngine = new PWDSignalSingleRatchetCipherEngine(sharedSecretKey, isConnectionInitiator);
+
+            // clear out (as best we can) the shared secret key from memory
+            this.sharedSecretKey = BigInteger.ZERO;
+
             state = PWDSignalSessionState.PAYLOAD_3_VALIDATED;
         } catch (Exception e) {
             state = PWDSignalSessionState.PAYLOAD_3_FAILED;
             throw e;
         }
+    }
+
+    // After payload 3 is validated, we know we'll have a CipherEngine
+
+    public byte[] encryptSendPacket(byte[] message, int offset, int length) throws Exception {
+        if (state != PWDSignalSessionState.PAYLOAD_3_VALIDATED) throw new IllegalStateException("Need to have validated payload 3 before encryption/decryption can proceed");
+        return cipherEngine.encryptSendPacket(message, offset, length);
+    }
+
+    public byte[] decryptReceivePacket(byte[] cipherText, int offset, int length) throws Exception {
+        if (state != PWDSignalSessionState.PAYLOAD_3_VALIDATED) throw new IllegalStateException("Need to have validated payload 3 before encryption/decryption can proceed");
+        return cipherEngine.decryptReceivePacket(cipherText, offset, length);
     }
 
     // MARK: Misc helpers
