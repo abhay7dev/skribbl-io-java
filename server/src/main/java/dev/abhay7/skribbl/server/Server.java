@@ -329,8 +329,8 @@ public class Server {
                     Lobby lob = lobbies.getLobbyByName(lobName);
                     if (this.username != null && lob != null) {
                         try {
-                            sendDataPackage(new LobbyJoinPack(lob.getPlayerNames(), lob.isStarted()), MessageType.LOBBY_JOIN);
                             lob.addClient(this);
+                            sendDataPackage(new LobbyJoinPack(lob.getPlayerNames(), lob.isStarted()), MessageType.LOBBY_JOIN);
                             this.currentLobby = lob;
                             
                             System.out.println("Notifying all except sender (" + this.username + ")");

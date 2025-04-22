@@ -46,7 +46,7 @@ public class LobbyLeavePack extends DataPackage {
     @Override
     public JSONObject toJSON() {
         JSONObject jo = new JSONObject();
-        jo.put("isRequest", this.isServerRequest());
+        jo.put("isServerRequest", this.isServerRequest());
 
         if (!this.isServerRequest()) {
             if(this.username == null) {
