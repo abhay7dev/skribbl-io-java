@@ -1,4 +1,4 @@
-package dev.abhay7.skribbl.client;
+package dev.abhay7.skribbl.client.sameer;
 
 import java.awt.*;
 
