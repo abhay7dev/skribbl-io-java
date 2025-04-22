@@ -17,15 +17,21 @@ import org.json.JSONArray;
 import org.json.JSONObject;
 
 public class PWDSignalSession {
+    // 128 bits of security
     private static final JPAKEPrimeOrderGroup jpakePrimeOrderGroup = JPAKEPrimeOrderGroups.NIST_3072;
 
+    // State machine
     private PWDSignalSessionState state;
 
+    // Source of entropy
     private final SecureRandom random;
 
+    // Participant ID for JPAKE
     private final String jpakeUserID;
     private final JPAKEParticipant jpake;
 
+    // The raw, shared secret key derived immediately after JPAKE
+    // Do not use this as raw keying material--run it through a KDF first
     private BigInteger sharedSecretKey;
 
     public PWDSignalSession(String password) throws NoSuchAlgorithmException {
@@ -35,10 +41,13 @@ public class PWDSignalSession {
         log("JPAKE User Identifier: " + jpakeUserID);
 
         jpake = new JPAKEParticipant(jpakeUserID, password.toCharArray(), jpakePrimeOrderGroup, SHA256Digest.newInstance(), random);
-        
+
+        sharedSecretKey = null;
+
         state = PWDSignalSessionState.INITIALIZED;
     }
 
+    // Returns the state of the PWDSignal session
     public PWDSignalSessionState getState() {
         return state;
     }
@@ -183,10 +192,17 @@ public class PWDSignalSession {
 
     // MARK: Misc helpers
 
+    // Don't log sensitive info...
     private static void log(String str) {
-        System.out.println(str);
+        if (true) {
+            System.out.println(str);
+        }
+        else {
+            // do nothing; don't log
+        }
     }
 
+    // Returns a hex string representing numBytes of data
     private static String nextHexString(SecureRandom random, int numBytes) {
         byte[] bytes = new byte[numBytes];
         random.nextBytes(bytes);
@@ -217,8 +233,11 @@ public class PWDSignalSession {
         String jsonStr = object.toString();
         byte[] jsonBytes = jsonStr.getBytes(StandardCharsets.UTF_8);
 
+        // have to do this because IDK how big the JSON data will be
+
         byte[] result = new byte[jsonBytes.length + 4];
         writeIntLE(jsonBytes.length, result, 0);
+        
         System.arraycopy(jsonBytes, 0, result, 4, jsonBytes.length);
 
         return result;
