@@ -17,7 +17,7 @@ import dev.abhay7.skribbl.client.jameskwong.pwdsignal.PWDSignalSession;
 public class Main {
 
     public static void main(String[] args) {
-        if (true) {
+        if (false) {
             SwingUtilities.invokeLater(() -> {
                 FlatIntelliJLaf.registerCustomDefaultsSource("style");
                 FlatIntelliJLaf.setup();

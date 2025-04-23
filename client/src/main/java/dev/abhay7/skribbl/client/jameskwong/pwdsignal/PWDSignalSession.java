@@ -334,46 +334,49 @@ public class PWDSignalSession {
      * starting at the specified offset.
      *
      * @param value  the integer value to encode
-     * @param buffer the destination byte array
+     * @param data the destination byte array
      * @param offset the starting position in the array to write the bytes
-     * @throws IllegalArgumentException if the buffer is too small
+     * @throws IllegalArgumentException if the data array is too small
      */
-    private static void writeIntLE(int value, byte[] buffer, int offset) {
-        if (buffer == null) {
-            throw new IllegalArgumentException("Buffer cannot be null");
-        }
-        if (offset < 0 || offset + 4 > buffer.length) {
-            throw new IllegalArgumentException("Buffer too small or invalid offset: " + offset);
+    private static void writeIntLE(int value, byte[] data, int offset) {
+        if (data == null) {
+            throw new IllegalArgumentException("data cannot be null");
         }
 
-        // Write the least significant byte first
-        buffer[offset]     = (byte) (value & 0xFF);
-        buffer[offset + 1] = (byte) ((value >> 8) & 0xFF);
-        buffer[offset + 2] = (byte) ((value >> 16) & 0xFF);
-        buffer[offset + 3] = (byte) ((value >> 24) & 0xFF);
+        if (offset < 0 || offset + 4 > data.length) {
+            throw new IllegalArgumentException("data array too small or invalid offset of " + offset);
+        }
+
+        // Write the least significant byte first as per little endian
+        data[offset]     = (byte) (value & 0xFF);
+        data[offset + 1] = (byte) ((value >> 8) & 0xFF);
+        data[offset + 2] = (byte) ((value >> 16) & 0xFF);
+        data[offset + 3] = (byte) ((value >> 24) & 0xFF);
     }
 
     /**
      * Decodes a 32-bit integer from the byte array in little-endian order,
      * starting at the specified offset.
      *
-     * @param buffer the source byte array
+     * @param data the source byte array
      * @param offset the starting position in the array to read the bytes
      * @return the decoded integer value
-     * @throws IllegalArgumentException if the buffer is too small
+     * @throws IllegalArgumentException if the data array is too small
      */
-    private static int readIntLE(byte[] buffer, int offset) {
-        if (buffer == null) {
-            throw new IllegalArgumentException("Buffer cannot be null");
+    private static int readIntLE(byte[] data, int offset) {
+        if (data == null) {
+            throw new IllegalArgumentException("data cannot be null");
         }
-        if (offset < 0 || offset + 4 > buffer.length) {
-            throw new IllegalArgumentException("Buffer too small or invalid offset: " + offset);
+
+        if (offset < 0 || offset + 4 > data.length) {
+            throw new IllegalArgumentException("data array too small or invalid offset of " + offset);
         }
 
         // Combine bytes starting from least significant
-        return ((buffer[offset] & 0xFF)) |
-               ((buffer[offset + 1] & 0xFF) << 8) |
-               ((buffer[offset + 2] & 0xFF) << 16) |
-               ((buffer[offset + 3] & 0xFF) << 24);
+        // need 0xFF for sign extension
+        return ((data[offset] & 0xFF)) |
+               ((data[offset + 1] & 0xFF) << 8) |
+               ((data[offset + 2] & 0xFF) << 16) |
+               ((data[offset + 3] & 0xFF) << 24);
     }
 }
