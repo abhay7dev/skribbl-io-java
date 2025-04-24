@@ -52,6 +52,7 @@ public class Client {
     private JPanel currentlyDisplayedPanel;
     private JPanel usersPanel;
     private JTextArea chatPanel;
+    private Board board;
 
     private Socket socket;
     private InputStream reader;
@@ -404,6 +405,10 @@ public class Client {
 
         toRet.add(eastWrapper, BorderLayout.EAST);
 
+        board = new Board(networkHandler);
+        board.addMouseListener(board);
+        toRet.add(board);
+
         return toRet;
     }
 
@@ -455,10 +460,21 @@ public class Client {
                 } catch(Exception e) {
                     showMessageDialog("Error while leaving lobby: " + e, "Lobby Leave Error", JOptionPane.ERROR_MESSAGE);           
                 }
-                usersPanel.removeAll();
-                usersPanel = null;
-                chatPanel.removeAll();
-                chatPanel = null;
+                
+                if(usersPanel != null) {
+                    usersPanel.removeAll();
+                    usersPanel = null;
+                }
+                if(chatPanel != null) {
+                    chatPanel.removeAll();
+                    chatPanel = null;
+                }
+                if(board != null) {
+                    board.removeMouseListener(board);
+                    board.removeAll();
+                    board = null;
+                }
+
                 frame.remove(currentlyDisplayedPanel);
                 currentlyDisplayedPanel = getLobbiesPanel();
                 frame.add(currentlyDisplayedPanel);
