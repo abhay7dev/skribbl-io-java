@@ -18,6 +18,7 @@ import javax.swing.JLabel;
 import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 import javax.swing.JScrollPane;
+import javax.swing.JTextArea;
 import javax.swing.JTextField;
 import javax.swing.SwingUtilities;
 import javax.swing.SwingWorker;
@@ -50,6 +51,7 @@ public class Client {
 
     private JPanel currentlyDisplayedPanel;
     private JPanel usersPanel;
+    private JTextArea chatPanel;
 
     private Socket socket;
     private InputStream reader;
@@ -368,7 +370,70 @@ public class Client {
 
         toRet.add(westWrapper, BorderLayout.WEST);
 
+        JPanel eastWrapper = new JPanel();
+        eastWrapper.setLayout(new BoxLayout(eastWrapper, BoxLayout.Y_AXIS));
+
+        chatPanel = new JTextArea();
+        chatPanel.setEditable(false);
+
+        JScrollPane chatScrollPane = new JScrollPane(chatPanel);
+        chatScrollPane.setPreferredSize(new Dimension((int) (WIDTH / 4.5), HEIGHT * 7 / 10));
+        chatScrollPane.setVerticalScrollBarPolicy(JScrollPane.VERTICAL_SCROLLBAR_AS_NEEDED);
+        chatScrollPane.setHorizontalScrollBarPolicy(JScrollPane.HORIZONTAL_SCROLLBAR_NEVER);
+
+        JPanel sendMessagePanel = new JPanel();
+        sendMessagePanel.setLayout(new FlowLayout());
+        
+        JTextField messageArea = new JTextField();
+        messageArea.setPreferredSize(new Dimension(WIDTH / 6, HEIGHT * 1 / 20));
+        messageArea.addActionListener((_) -> {
+            sendMessage(messageArea, chatPanel);
+        });
+
+        JButton sendMessageButton = new JButton("Send");
+        sendMessageButton.setPreferredSize(new Dimension(WIDTH / 15, HEIGHT * 1 / 20));
+        sendMessageButton.addActionListener((_) -> {
+            sendMessage(messageArea, chatPanel);
+        });
+
+        sendMessagePanel.add(messageArea);
+        sendMessagePanel.add(sendMessageButton);
+
+        eastWrapper.add(chatScrollPane);
+        eastWrapper.add(sendMessagePanel);
+
+        toRet.add(eastWrapper, BorderLayout.EAST);
+
         return toRet;
+    }
+
+    private void sendMessage(JTextField messageArea, JTextArea chatPanel) {
+        if(messageArea.getText().isBlank()) return;
+        (new SwingWorker<Void, Void>() {
+
+            @Override
+            protected Void doInBackground() throws Exception {
+                networkHandler.sendMessage(messageArea.getText());
+                return null;
+            }
+
+            protected void done() {
+                boolean success = false;
+                try {
+                    get();
+                    success = true;
+                } catch(Exception e) {
+                    chatPanel.setText(chatPanel.getText() + "\n" + "FAILED TO SEND MESSAGE");
+                    success = false;
+                }
+
+                if(success) {
+                    chatPanel.setText(chatPanel.getText() + "\n" + username + ": " + messageArea.getText());
+                }
+                messageArea.setText("");
+            }
+
+        }).execute();
     }
     
     // Leave a lobby
@@ -388,10 +453,12 @@ public class Client {
                 try {
                     get();   
                 } catch(Exception e) {
-                    showMessageDialog("Error while leaving lobby: " + e, "Lobby Leave Error", JOptionPane.ERROR_MESSAGE);                    
+                    showMessageDialog("Error while leaving lobby: " + e, "Lobby Leave Error", JOptionPane.ERROR_MESSAGE);           
                 }
                 usersPanel.removeAll();
                 usersPanel = null;
+                chatPanel.removeAll();
+                chatPanel = null;
                 frame.remove(currentlyDisplayedPanel);
                 currentlyDisplayedPanel = getLobbiesPanel();
                 frame.add(currentlyDisplayedPanel);
@@ -443,12 +510,22 @@ public class Client {
     protected void updatePlayerList(ArrayList<String> usernames) {
         this.currentPlayersList = usernames;
         if (usersPanel != null) {
-            usersPanel.removeAll();
-            for (String p : this.currentPlayersList) {
-                usersPanel.add(new JLabel(p.equals(username) ? p + " (You)" : p));
-            }
-            usersPanel.revalidate();
-            usersPanel.repaint();
+            SwingUtilities.invokeLater(() -> {
+                usersPanel.removeAll();
+                for (String p : this.currentPlayersList) {
+                    usersPanel.add(new JLabel(p.equals(username) ? p + " (You)" : p));
+                }
+                usersPanel.revalidate();
+                usersPanel.repaint();
+            });
+        }
+    }
+
+    protected void updateMessages(String message) {
+        if (chatPanel != null) {
+            SwingUtilities.invokeLater(() -> {
+                chatPanel.setText(chatPanel.getText() + "\n" + message);
+            });
         }
     }
 

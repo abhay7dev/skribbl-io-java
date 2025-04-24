@@ -228,6 +228,9 @@ public class Server {
                         case LOBBY_LEAVE:
                             receivedClientData = LobbyLeavePack.fromJSON(innerDataString);
                             break;
+                        case GAME_DATA:
+                            receivedClientData = GameDataPack.fromJSON(innerDataString);
+                            break;
                         case FETCH_WORDLIST:
                             receivedClientData = WordsFetchPack.fromJSON(innerDataString);
                             break;
@@ -355,6 +358,16 @@ public class Server {
                             sendDataPackage(new LobbyJoinPack(), MessageType.LOBBY_JOIN);
                         } catch (Exception e) {
                             System.out.println("Failed to send failure of joining lobby: " + e);
+                        }
+                    }
+                } else if(dataPackage instanceof GameDataPack) {
+                    if(this.isInLobby()) {
+                        try {
+                            if(((GameDataPack) dataPackage).getMessage() != "") {
+                                this.getCurrentLobby().notifyAllExceptSender(new GameDataPack(false, this.getUsername() + ": " + ((GameDataPack) dataPackage).getMessage()), this, MessageType.GAME_DATA);
+                            }
+                        } catch(Exception e) {
+                            System.out.println("Failed to send GameDataPack to cliens: " + e);
                         }
                     }
                 } else if(dataPackage instanceof WordsFetchPack) {

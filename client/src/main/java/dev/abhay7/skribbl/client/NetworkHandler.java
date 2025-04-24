@@ -5,6 +5,7 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.net.ProtocolException;
 import java.net.Socket;
+import java.sql.Time;
 import java.util.Map;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.CompletableFuture;
@@ -21,6 +22,7 @@ import dev.abhay7.skribbl.server.MessageType;
 import dev.abhay7.skribbl.server.RawPacketHandler;
 import dev.abhay7.skribbl.server.datapacks.ClientVerificationPack;
 import dev.abhay7.skribbl.server.datapacks.DataPackage;
+import dev.abhay7.skribbl.server.datapacks.GameDataPack;
 import dev.abhay7.skribbl.server.datapacks.KeepAlivePack;
 import dev.abhay7.skribbl.server.datapacks.LobbyInitPack;
 import dev.abhay7.skribbl.server.datapacks.LobbyJoinPack;
@@ -131,6 +133,13 @@ public class NetworkHandler extends Thread {
                 String username =  LobbyLeavePack.fromJSON(packet.getData()).getUsername();
                 client.getCurrentPlayersList().remove(username);
                 client.updatePlayerList(client.getCurrentPlayersList());
+            case MessageType.GAME_DATA:
+                if(packet.getData().has("message")) {
+                    client.updateMessages(packet.getData().getString("message"));
+                } else {
+
+                }
+                break;
             default:
                 break;
         }
@@ -138,7 +147,7 @@ public class NetworkHandler extends Thread {
     }
 
     // Verify method. This needs to happen to ensure proper connection to the server
-    public synchronized void verify(String username) throws IOException, JSONException, ProtocolException {
+    protected synchronized void verify(String username) throws IOException, JSONException, ProtocolException {
         JSONObject clientVerificationData = readJSONData(MessageType.CLIENT_VERIFICATION);
         ClientVerificationPack responseVerification = ClientVerificationPack.fromJSON(clientVerificationData);
 
@@ -153,7 +162,7 @@ public class NetworkHandler extends Thread {
     }
 
     // Get Lobby list method
-    public synchronized LobbyListPack retrieveLobbyList() throws IOException, JSONException, InterruptedException, ExecutionException, TimeoutException {
+    protected synchronized LobbyListPack retrieveLobbyList() throws IOException, JSONException, InterruptedException, ExecutionException, TimeoutException {
         this.setWriting(true);
         LobbyListPack llp = new LobbyListPack();
         sendDataPackage(llp, MessageType.LOBBY_LIST);
@@ -169,7 +178,7 @@ public class NetworkHandler extends Thread {
     }
     
     // Create lobby method
-    public synchronized LobbyInitPack createPublicLobby(String lobbyName) throws IOException, JSONException, InterruptedException, ExecutionException, TimeoutException {
+    protected synchronized LobbyInitPack createPublicLobby(String lobbyName) throws IOException, JSONException, InterruptedException, ExecutionException, TimeoutException {
         this.setWriting(true);
         LobbyInitPack lip = new LobbyInitPack(lobbyName);
         sendDataPackage(lip, MessageType.LOBBY_INIT);
@@ -184,7 +193,8 @@ public class NetworkHandler extends Thread {
         return lip;
     }
 
-    public synchronized LobbyJoinPack joinPublicLobby(String lobName) throws IOException, JSONException, InterruptedException, ExecutionException, TimeoutException {
+    // Join Public lobby
+    protected synchronized LobbyJoinPack joinPublicLobby(String lobName) throws IOException, JSONException, InterruptedException, ExecutionException, TimeoutException {
         this.setWriting(true);
         LobbyJoinPack ljp = new LobbyJoinPack(lobName);
         sendDataPackage(ljp, MessageType.LOBBY_JOIN);
@@ -213,6 +223,14 @@ public class NetworkHandler extends Thread {
         llp = LobbyLeavePack.fromJSON(json);
 
         return llp;
+    }
+
+    // Send a message
+    public synchronized void sendMessage(String msg) throws IOException, JSONException, InterruptedException, ExecutionException, TimeoutException {
+        this.setWriting(true);
+        GameDataPack gdp = new GameDataPack(msg);
+        sendDataPackage(gdp, MessageType.GAME_DATA);
+        this.setWriting(false);
     }
 
 
