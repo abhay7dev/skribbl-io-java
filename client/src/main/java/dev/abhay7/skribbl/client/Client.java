@@ -429,6 +429,9 @@ public class Client {
                     currentlyDisplayedPanel = getGamePanel(lobName);
                     frame.add(currentlyDisplayedPanel);
                     frame.setTitle(inGameTitle);
+
+                    // TODO: If ljp.isStarted(), do some other stuff
+
                     frame.revalidate();
                     frame.repaint();
                 }
@@ -437,6 +440,17 @@ public class Client {
         }).execute();
     }
 
+    protected void updatePlayerList(ArrayList<String> usernames) {
+        this.currentPlayersList = usernames;
+        if (usersPanel != null) {
+            usersPanel.removeAll();
+            for (String p : this.currentPlayersList) {
+                usersPanel.add(new JLabel(p.equals(username) ? p + " (You)" : p));
+            }
+            usersPanel.revalidate();
+            usersPanel.repaint();
+        }
+    }
 
     // Cleanly exit the program
     private synchronized void exitProgram() {
@@ -506,4 +520,5 @@ public class Client {
     public synchronized boolean isHosting() { return this.isHosting; }
     public synchronized void setHosting(boolean host) { this.isHosting = host; }
 
+    protected synchronized ArrayList<String> getCurrentPlayersList() { return this.currentPlayersList; }
 }

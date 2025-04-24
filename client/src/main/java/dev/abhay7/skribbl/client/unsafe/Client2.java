@@ -55,7 +55,7 @@ public class Client2 extends JFrame {
     private JPanel usersPanel;
 
     private volatile boolean isInLobby;
-    private volatile boolean isHost;
+    // private volatile boolean isHost;
     private volatile ArrayList<String> usersInGame;
 
     private int openDialogs = 0;
@@ -114,7 +114,7 @@ public class Client2 extends JFrame {
             keepAliveThread.start();
 
             this.isInLobby = false;
-            this.isHost = false;
+            // this.isHost = false;
             usersInGame = new ArrayList<String>();
 
             this.setVisible(true);
@@ -281,7 +281,7 @@ public class Client2 extends JFrame {
 
             protected void done() {
                 System.out.println("Hit leave() done");
-                isHost = false;
+                // isHost = false;
                 usersInGame = new ArrayList<String>();
 
                 usersPanel = null;
@@ -318,7 +318,7 @@ public class Client2 extends JFrame {
 
                 if(ljp != null) {
                     isInLobby = true;
-                    isHost = false;
+                    // isHost = false;
                     usersInGame.addAll(ljp.getPlayers());
                     remove(currentPanel);
                     currentPanel = getGamePanel(lobbyName, usersInGame, ljp.isStarted());
@@ -346,7 +346,7 @@ public class Client2 extends JFrame {
                         lip = LobbyInitPack.fromJSON(json);
                         return lip.isSuccess();
                     } else if(lobbyArgs.length == 2) {
-                        // TODO: Implement private lobbies
+                        // Implement private lobbies
                         return false;
                     }
                     return false;            
@@ -361,7 +361,7 @@ public class Client2 extends JFrame {
                     }
                     if(createdLobby) {
                         isInLobby = true;
-                        isHost = true;
+                        // isHost = true;
                         usersInGame.add(username);
                         remove(currentPanel);
                         currentPanel = getGamePanel(lobbyArgs[0]);

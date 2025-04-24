@@ -121,11 +121,16 @@ public class NetworkHandler extends Thread {
 
     }
 
-    private void handlePacket(ReceivedPacket packet) {
+    private void handlePacket(ReceivedPacket packet) throws JSONException {
 
         switch (packet.getType()) {
-            case MessageType.GAME_DATA:
+            case MessageType.LOBBY_JOIN:
+                client.updatePlayerList(LobbyJoinPack.fromJSON(packet.getData()).getPlayers());
                 break;
+            case MessageType.LOBBY_LEAVE:
+                String username =  LobbyLeavePack.fromJSON(packet.getData()).getUsername();
+                client.getCurrentPlayersList().remove(username);
+                client.updatePlayerList(client.getCurrentPlayersList());
             default:
                 break;
         }
