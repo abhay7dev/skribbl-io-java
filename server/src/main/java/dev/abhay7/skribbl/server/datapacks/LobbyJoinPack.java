@@ -39,7 +39,9 @@ public class LobbyJoinPack extends DataPackage {
     public ArrayList<String> getPlayers() { return this.players; }
     
     public static LobbyJoinPack fromJSON(String json) throws JSONException {
-        JSONObject jo = new JSONObject(json);
+        return fromJSON(new JSONObject(json));
+    }
+    public static LobbyJoinPack fromJSON(JSONObject jo) throws JSONException {
         boolean isServerRequest = jo.getBoolean("isServerRequest");
     
         // This is where server will most likely end up

@@ -24,7 +24,9 @@ public class WordsFetchPack extends DataPackage {
     public ArrayList<String> getWordList() { return this.wordList; }
 
     public static WordsFetchPack fromJSON(String json) throws JSONException {
-        JSONObject jo = new JSONObject(json);
+        return fromJSON(new JSONObject(json));
+    }
+    public static WordsFetchPack fromJSON(JSONObject jo) throws JSONException {
         boolean isServerRequest = jo.getBoolean("isServerRequest");
     
         if (isServerRequest) return new WordsFetchPack();

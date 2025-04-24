@@ -234,6 +234,10 @@ public class Server {
                         case KEEP_ALIVE:
                             receivedClientData = new KeepAlivePack();
                             break;
+                        case SERVER_LEAVE:
+                            this.verified = false;
+                            receivedClientData = new ServerLeavePack();
+                            break;
                         default:
                             throw new Exception("Unsupported message type");
                     }
@@ -268,8 +272,9 @@ public class Server {
                     this.leaveLobby();
                 }
                 if(this.username != null) {
-                    usernames.remove(username);
+                    usernames.remove(this.username);
                 }
+                System.out.println("Disconnected " + this.username);
             } catch (Exception e) {
                 System.out.println("Failed to disconnect and terminate a user: " + this.socketId + " - " + this.username);
             }
@@ -279,7 +284,7 @@ public class Server {
             
             System.out.println("Received Data Package: " + dataPackage);
 
-            if (this.verified && dataPackage.isServerRequest()) {
+            if (this.verified && dataPackage != null && dataPackage.isServerRequest()) {
             
                 if (dataPackage instanceof LobbyListPack) {
                     LobbyListPack toSend = LobbyListPack.getFromLobbies(lobbies.getLobbyArrayList());
@@ -366,14 +371,12 @@ public class Server {
                     try {
                         leaveLobby();
                         LobbyLeavePack toSend = new LobbyLeavePack(true);
-                        this.sendDataPackage(toSend, MessageType.FETCH_WORDLIST);
-                        System.out.println("Sent LobbyLeavePack with words list to " + this.username);
+                        this.sendDataPackage(toSend, MessageType.LOBBY_LEAVE);
+                        System.out.println("Sent LobbyLeavePack success to " + this.username);
                     } catch(Exception ioe) {
                         System.out.println("Failed to notify clients that someone left lobby.");
                     }
-                }/*else if(dataPackage instanceof KeepAlivePack) {
-                    System.out.println("Received keep alive pack: " + java.time.Instant.now().toEpochMilli());
-                }*/
+                }
             }
         }
 

@@ -24,7 +24,9 @@ public class LobbyInitPack extends DataPackage {
     public boolean isSuccess() { return this.success; }
     
     public static LobbyInitPack fromJSON(String json) throws JSONException {
-        JSONObject jo = new JSONObject(json);
+        return fromJSON(new JSONObject(json));
+    }
+    public static LobbyInitPack fromJSON(JSONObject jo) throws JSONException {
         boolean isServerRequest = jo.getBoolean("isServerRequest");
     
         if (isServerRequest) {

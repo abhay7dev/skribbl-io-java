@@ -36,7 +36,9 @@ public class ClientVerificationPack extends DataPackage {
     public boolean isSuccess() { return this.success; }
 
     public static ClientVerificationPack fromJSON(String json) throws JSONException {
-        JSONObject jo = new JSONObject(json);
+        return fromJSON(new JSONObject(json));
+    }
+    public static ClientVerificationPack fromJSON(JSONObject jo) throws JSONException {
         boolean isServerRequest = jo.getBoolean("isServerRequest");
         boolean isSuccess = jo.getBoolean("isSuccess");
 

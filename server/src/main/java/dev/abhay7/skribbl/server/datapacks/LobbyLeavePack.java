@@ -27,7 +27,9 @@ public class LobbyLeavePack extends DataPackage {
     public String getUsername() { return this.username; }
 
     public static LobbyLeavePack fromJSON(String json) throws JSONException {
-        JSONObject jo = new JSONObject(json);
+        return fromJSON(new JSONObject(json));
+    }
+    public static LobbyLeavePack fromJSON(JSONObject jo) throws JSONException {
         boolean isServerRequest = jo.getBoolean("isServerRequest");
     
         if (isServerRequest) {

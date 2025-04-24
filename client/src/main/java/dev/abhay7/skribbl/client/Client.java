@@ -4,14 +4,10 @@ import java.awt.BorderLayout;
 import java.awt.Cursor;
 import java.awt.Dimension;
 import java.awt.FlowLayout;
-import java.awt.event.WindowAdapter;
-import java.awt.event.WindowEvent;
-import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.net.Socket;
 import java.util.ArrayList;
-import java.util.List;
 
 import javax.swing.Box;
 import javax.swing.BoxLayout;
@@ -27,103 +23,100 @@ import javax.swing.SwingUtilities;
 import javax.swing.SwingWorker;
 import javax.swing.border.EmptyBorder;
 
-import org.json.JSONObject;
+import dev.abhay7.skribbl.server.datapacks.LobbyJoinPack;
 
-import dev.abhay7.skribbl.server.MessageType;
-import dev.abhay7.skribbl.server.RawPacketHandler;
-import dev.abhay7.skribbl.server.datapacks.*;
-
-public class Client extends JFrame {
+public class Client {
 
     public static final double ASPECT_RATIO = 16.0 / 9.0;
     public static final int HEIGHT = 720;
     public static final int WIDTH = (int) (HEIGHT * ASPECT_RATIO);
     public static final Dimension WINDOW_SIZE = new Dimension(WIDTH, HEIGHT);
 
+    private JFrame frame;
+
     private String username;
     private String serverInet;
     private int serverPort;
+
+    private volatile boolean isRunning;
+
+    private volatile boolean isPlaying;
+    private volatile boolean isHosting;
+
+    private String lobbiesListTitle;
+    private String inGameTitle;
+
+    private ArrayList<String> currentPlayersList;
+
+    private JPanel currentlyDisplayedPanel;
+    private JPanel usersPanel;
 
     private Socket socket;
     private InputStream reader;
     private OutputStream writer;
 
-    private Thread keepAliveThread;
-    private boolean runningProgram;
+    private NetworkHandler networkHandler;
 
-    private JPanel currentPanel;
-    private JPanel usersPanel;
+    private static final byte MAX_DIALOG_COUNT = 5;
+    private byte openDialogs;
 
-    private boolean isInLobby;
-    private boolean isHost;
-    private ArrayList<String> usersInGame;
-
-    private int openDialogs = 0;
-
-    public Client(String[] args) {
+    public Client(String... args) {
         if(args.length < 3 || args[0].isBlank() || args[1].isBlank() || args[2].equals("0")) {
-            System.err.println("Invalid client arguments");
-            System.exit(1);
+            fatalError("Invalid Client Arguments", new IllegalArgumentException());
         }
 
-        runningProgram = true;
+        this.setRunning(true);
 
         this.username = args[0];
         this.serverInet = args[1];
+        try { this.serverPort = Integer.parseInt(args[2]); } catch(Exception e) { fatalError("Invalid port value provided: " + args[2], e); }
 
         try {
-            this.serverPort = Integer.parseInt(args[2]);
-            socket = new Socket(this.serverInet, this.serverPort);
-            reader = socket.getInputStream();
-            writer = socket.getOutputStream();
+            this.socket = new Socket(this.serverInet, this.serverPort);
+            this.reader = socket.getInputStream();
+            this.writer = socket.getOutputStream();
 
-            String innerDataString = readJSONDataToString(MessageType.CLIENT_VERIFICATION);
-            ClientVerificationPack responseVerification = ClientVerificationPack.fromJSON(innerDataString);
-            responseVerification = new ClientVerificationPack(responseVerification.getVerificationString() + "_VERIFIEDCONNECTION", this.username);
-            sendDataPackage(responseVerification, MessageType.CLIENT_VERIFICATION);
-
-            String confirmString = readJSONDataToString(MessageType.CLIENT_VERIFICATION);
-            ClientVerificationPack confirmPack = ClientVerificationPack.fromJSON(confirmString);
-            if(!confirmPack.isSuccess()) throw new Exception("Failure");
-
+            networkHandler = new NetworkHandler(this, this.socket, this.reader, this.writer);
+            networkHandler.verify(this.username);
         } catch(Exception e) {
-            showMessageDialog("Failed to connect to server. Your username may have been taken or your internet may be down.", "Network Error", JOptionPane.ERROR_MESSAGE, false);
-            runningProgram = false;
+            this.setRunning(false);
+            String errMsg = "Failed to connect and verify with server";
+            fatalError(errMsg, e);
+            showMessageDialog(errMsg, "Failed to connect", JOptionPane.ERROR_MESSAGE);
         }
 
-        if(runningProgram) {
-            keepAliveThread = new Thread(new ClientNetworkHandler());
+        if(this.isRunning()) {
 
-            this.setTitle("skribbl.io (Java) - Lobbies - " + this.serverInet + ":" + this.serverPort);
-            this.setSize(Client.WINDOW_SIZE);
-            this.setMinimumSize(Client.WINDOW_SIZE);
-            this.setMaximumSize(Client.WINDOW_SIZE);
-            this.setResizable(false);
-            this.setLocationRelativeTo(null);
+            this.lobbiesListTitle = "skribbl.io (Java) - Lobbies - " + this.serverInet + ":" + this.serverPort;
 
-            this.addWindowListener(new WindowAdapter() {
+            frame = new JFrame(this.lobbiesListTitle);
+            frame.setSize(Client.WINDOW_SIZE);
+            frame.setResizable(false);
+            frame.setLocationRelativeTo(null);
+
+            frame.addWindowListener(new java.awt.event.WindowAdapter() {
                 @Override
-                public void windowClosing(WindowEvent e) {
+                public void windowClosing(java.awt.event.WindowEvent we) {
                     exitProgram();
                 }
             });
 
-            currentPanel = getLobbiesPanel();
-            this.add(currentPanel);
+            networkHandler.start();
 
-            keepAliveThread.start();
+            currentlyDisplayedPanel = getLobbiesPanel();
+            frame.add(currentlyDisplayedPanel);
 
-            this.isInLobby = false;
-            this.isHost = false;
-            usersInGame = new ArrayList<String>();
-
-            this.setVisible(true);
+            currentPlayersList = new ArrayList<String>();
+            this.setPlaying(false);
+            this.setHosting(false);
+            frame.setVisible(true);
+        
         } else {
-            exitProgram();
+            this.exitProgram();
         }
     }
 
-    
+
     private JPanel getLobbiesPanel() {
         // Overall Panel covering the entire window
         JPanel toRet = new JPanel(new BorderLayout());
@@ -201,29 +194,21 @@ public class Client extends JFrame {
         return toRet;
     }
 
-    // Asynchronous method which updates lobbiesListPanel after recieving data
+    // Fetch the lobbies list    
     private void updateLobbiesListPanel(JPanel lobbiesListPanel, Dimension d) {
         (new SwingWorker<ArrayList<String[]>, Void>() {
-
+    
             @Override
             protected ArrayList<String[]> doInBackground() throws Exception {
-                LobbyListPack llp = new LobbyListPack();
-                sendDataPackage(llp, MessageType.LOBBY_LIST);
-                System.out.println(llp.toJSON());
-                String dataString = readJSONDataToString(MessageType.LOBBY_LIST);
-                System.out.println(dataString);
-                llp = LobbyListPack.fromJSON(dataString);
-                return llp.getLobbies();
+                return networkHandler.retrieveLobbyList().getLobbies();
             }
 
             protected void done() {
-                System.out.println("update lob list panel done hit");
                 ArrayList<String[]> lobbies;
                 try {
                     lobbies = get();
                 } catch(Exception e) {
-                    e.printStackTrace();
-                    showMessageDialog("Failed to fetch list of lobbies. Try refreshing or restarting the app. The server may also be corrupt.", "Failed to Fetch Lobbies", JOptionPane.ERROR_MESSAGE);
+                    showMessageDialog("Failed to fetch list of lobbies. Try refreshing or restarting the app. The server may also be corrupt: " + e, "Failed to Fetch Lobbies", JOptionPane.ERROR_MESSAGE);
                     lobbies = null;
                 }
 
@@ -251,130 +236,55 @@ public class Client extends JFrame {
                     }
                 }
 
-                System.out.println("lobbieslistpanel revaliding repainiting");
-
                 lobbiesListPanel.revalidate();
                 lobbiesListPanel.repaint();
             }
 
         }).execute();
     }
-    
-    private void leaveLobby() {
-        (new SwingWorker<Void, Void>() {
 
-            @Override
-            protected Void doInBackground() throws Exception {
-                if(isInLobby) {
-                    isInLobby = false;
-                    LobbyLeavePack llp = new LobbyLeavePack();
-                    System.out.println("Sending lobby leave pack");
-                    sendDataPackage(llp, MessageType.LOBBY_LEAVE); 
-                    System.out.println("Waiting to read lobby leave pack response");  
-                    String dataString = readJSONDataToString(MessageType.LOBBY_LEAVE);
-                    System.out.println(dataString);
-                }
-                return null;
-            }
-
-            protected void done() {
-                isHost = false;
-                usersInGame = new ArrayList<String>();
-
-                usersPanel = null;
-                remove(currentPanel);
-                System.out.println("about to call getLobbiesPanel");
-                currentPanel = getLobbiesPanel();
-                add(currentPanel);
-                System.out.println("Revalidating and repainting panel");
-                revalidate();
-                repaint();
-            }
-
-        }).execute();
-    }
-
-    private void joinPublicLobby(String lobbyName) {
-
-        (new SwingWorker<LobbyJoinPack, Void>() {
-
-            @Override
-            protected LobbyJoinPack doInBackground() throws Exception {
-                LobbyJoinPack ljp = new LobbyJoinPack(lobbyName);
-                sendDataPackage(ljp, MessageType.LOBBY_JOIN);
-                String json = readJSONDataToString(MessageType.LOBBY_JOIN);
-                ljp = LobbyJoinPack.fromJSON(json);
-                return (ljp.isSuccess() ? ljp : null);    
-            }
-
-            protected void done() {
-                LobbyJoinPack ljp = null;
-                try {
-                    ljp = get();
-                } catch(Exception e) {
-                    showMessageDialog("Failed to send lobby join request", "Network Error", JOptionPane.ERROR_MESSAGE);
-                }
-
-                if(ljp != null) {
-                    isInLobby = true;
-                    isHost = false;
-                    usersInGame.addAll(ljp.getPlayers());
-                    remove(currentPanel);
-                    currentPanel = getGamePanel(lobbyName, usersInGame, ljp.isStarted());
-                    add(currentPanel);
-                    revalidate();
-                    repaint();
-                }
-            }
-
-        }).execute();
-    }
-    
-    // Create Lobby and display the game panel
+    // Create a lobby - Prompt, network, and window updating.
     private void createLobby() {
         String[] lobbyArgs = promptForCreateLobbyArgs();
+        this.inGameTitle = "skribbl.io (Java) - " + lobbyArgs[0]; 
         if(lobbyArgs != null) {
-
             (new SwingWorker<Boolean, Void>() {
+
                 @Override
                 protected Boolean doInBackground() throws Exception {
                     if(lobbyArgs.length == 1) {
-                        LobbyInitPack lip = new LobbyInitPack(lobbyArgs[0]);
-                        sendDataPackage(lip, MessageType.LOBBY_INIT);
-                        String json = readJSONDataToString(MessageType.LOBBY_INIT);
-                        lip = LobbyInitPack.fromJSON(json);
-                        return lip.isSuccess();
+                        return networkHandler.createPublicLobby(lobbyArgs[0]).isSuccess();
                     } else if(lobbyArgs.length == 2) {
                         // TODO: Implement private lobbies
                         return false;
                     }
-                    return false;            
+                    return false;
                 }
 
                 protected void done() {
                     boolean createdLobby = false;
                     try {
                         createdLobby = get().booleanValue();
-                    } catch(Exception e) {
-                        showMessageDialog("Failed to send lobby creation request", "Network Error", JOptionPane.ERROR_MESSAGE);
+                    } catch (Exception e) {
+                        showMessageDialog("Failed to create lobby: " + e, "Lobby Creation Error", JOptionPane.ERROR_MESSAGE);
                     }
                     if(createdLobby) {
-                        isInLobby = true;
-                        isHost = true;
-                        usersInGame.add(username);
-                        remove(currentPanel);
-                        currentPanel = getGamePanel(lobbyArgs[0]);
-                        add(currentPanel);
-                        revalidate();
-                        repaint();    
+                        isPlaying = true;
+                        isHosting = true;
+                        currentPlayersList.add(username);
+                        frame.remove(currentlyDisplayedPanel);
+                        currentlyDisplayedPanel = getGamePanel(lobbyArgs[0]);
+                        frame.add(currentlyDisplayedPanel);
+                        frame.setTitle(inGameTitle);
+                        frame.revalidate();
+                        frame.repaint();
                     }
                 }
-
 
             }).execute();
         }
     }
-    
+
     // Prompt user for parameters to create a lobby
     private String[] promptForCreateLobbyArgs() {
         JTextField lobbyNameField = new JTextField("Lobby - " + (new java.util.Date()).toString());
@@ -405,7 +315,7 @@ public class Client extends JFrame {
         
         dialogPanel.add(privatePanel);
         
-        int result = JOptionPane.showConfirmDialog(this, dialogPanel, "Create a new lobby", JOptionPane.OK_OPTION);
+        int result = JOptionPane.showConfirmDialog(this.frame, dialogPanel, "Create a new lobby", JOptionPane.OK_OPTION);
         
         if(result == JOptionPane.OK_OPTION) {
             String lobbyName = lobbyNameField.getText();
@@ -424,17 +334,16 @@ public class Client extends JFrame {
         showMessageDialog("User did not proceed with lobby creation.", "Lobby Creation Cancelled", JOptionPane.CANCEL_OPTION);
         return null;   
     }
-    
+
     // Returns the game panel where actual gameplay will happen
     private JPanel getGamePanel(String lobName) {
-        return getGamePanel(lobName, this.usersInGame, false);
+        return getGamePanel(lobName, this.currentPlayersList, false);
     }
-
     private JPanel getGamePanel(String lobName, ArrayList<String> players, boolean isStarted) {
         JPanel toRet = new JPanel();
         toRet.setLayout(new BorderLayout(10, 10));
         toRet.setPreferredSize(new Dimension(WIDTH, HEIGHT));
-
+        
         JPanel westWrapper = new JPanel();
         westWrapper.setLayout(new BoxLayout(westWrapper, BoxLayout.Y_AXIS));
 
@@ -462,45 +371,94 @@ public class Client extends JFrame {
         return toRet;
     }
     
-    // Helper method to read json to a string
-    private String readJSONDataToString(MessageType mt) throws Exception {
-        String receivedJsonString = RawPacketHandler.readRawPacket(reader);
-        
-        JSONObject receivedJsonObject = new JSONObject(receivedJsonString);
-        String type = receivedJsonObject.getString("type");
-        
-        if(MessageType.valueOf(type) != mt) {
-            throw new Exception("Invalid MessageType in request");
-        }
-        
-        return receivedJsonObject.getJSONObject("data").toString();
+    // Leave a lobby
+    private void leaveLobby() {
+        this.isPlaying = false;
+        this.isHosting = false;
+        this.currentPlayersList = new ArrayList<String>();
+        (new SwingWorker<Void, Void>() {
+
+            @Override
+            protected Void doInBackground() throws Exception {
+                networkHandler.leaveLobby();
+                return null;
+            }
+
+            protected void done() {
+                try {
+                    get();   
+                } catch(Exception e) {
+                    showMessageDialog("Error while leaving lobby: " + e, "Lobby Leave Error", JOptionPane.ERROR_MESSAGE);                    
+                }
+                usersPanel.removeAll();
+                usersPanel = null;
+                frame.remove(currentlyDisplayedPanel);
+                currentlyDisplayedPanel = getLobbiesPanel();
+                frame.add(currentlyDisplayedPanel);
+                frame.setTitle(lobbiesListTitle);
+                frame.revalidate();
+                frame.repaint();
+            }
+
+        }).execute();
     }
-    
-    // Network helper methods, copied from the server
-    private void sendDataPackage(DataPackage dp, MessageType type) throws IOException {
-        this.bufferDataPackage(dp, type);
-        writer.flush();
+
+    // Join a public lobby
+    private void joinPublicLobby(String lobName) {
+        this.currentPlayersList = new ArrayList<String>();
+        this.inGameTitle = "skribbl.io (Java) - " + lobName; 
+        (new SwingWorker<LobbyJoinPack, Void>() {
+
+            @Override
+            protected LobbyJoinPack doInBackground() throws Exception {
+                return networkHandler.joinPublicLobby(lobName);
+            }
+
+            protected void done() {
+                LobbyJoinPack ljp = null;
+                try {
+                    ljp = get();
+                } catch (Exception e) {
+                    showMessageDialog("Failed to join lobby: " + e, "Lobby Join Error", JOptionPane.ERROR_MESSAGE);
+                }
+                if(ljp != null && ljp.isSuccess()) {
+                    isPlaying = true;
+                    isHosting = false;
+                    currentPlayersList.addAll(ljp.getPlayers());
+                    frame.remove(currentlyDisplayedPanel);
+                    currentlyDisplayedPanel = getGamePanel(lobName);
+                    frame.add(currentlyDisplayedPanel);
+                    frame.setTitle(inGameTitle);
+                    frame.revalidate();
+                    frame.repaint();
+                }
+            }
+
+        }).execute();
     }
-    private void bufferDataPackage(DataPackage dp, MessageType type) throws IOException {
-        JSONObject dataEncapsulator = new JSONObject();
-        dataEncapsulator.put("type", type.toString());
-        dataEncapsulator.put("data", dp.toJSON());
-        RawPacketHandler.bufferRawPacket(this.writer, dataEncapsulator.toString());
-    }
-    
-    // Method to exit the program
+
+
+    // Cleanly exit the program
     private synchronized void exitProgram() {
         try {
-            runningProgram = false;
-            if(keepAliveThread != null && keepAliveThread.isAlive()) keepAliveThread.join();
+            this.setRunning(false);
+            if(networkHandler != null && networkHandler.isAlive()) {
+                networkHandler.disconnect();
+                networkHandler.interrupt();
+                networkHandler.join();
+            }
             if(writer != null) writer.close();
             if(reader != null) reader.close();
             if(socket != null) socket.close();
         } catch(Exception ex) {
             System.err.println("Error while disconnecting from server: " + ex);
         }
-        this.dispose();
-        this.setVisible(false);
+
+        if(frame != null) {
+            frame.setVisible(false);
+            frame.dispose();
+        }
+        
         System.exit(0);
     }
 
@@ -511,138 +469,41 @@ public class Client extends JFrame {
     private void showMessageDialog(String msg, String titleMsg, int errorCode, boolean invokeLater) {
         if(invokeLater) {
             SwingUtilities.invokeLater(() -> {
-                openDialogs++;
-                if(openDialogs < 2) {
-                    JOptionPane.showMessageDialog(this, msg, titleMsg, errorCode);
+                if(openDialogs < MAX_DIALOG_COUNT) {
+                    openDialogs++;
+                    JOptionPane.showMessageDialog(this.frame, msg, titleMsg, errorCode);
                 } else {
-                    System.err.println("Too many error dialogs called...");
-                    System.exit(1);
+                    fatalError("Too many error dialogs called", null);
                 }
                 openDialogs--;
             });
         } else {
-            openDialogs++;
-            if(openDialogs < 2) {
-                JOptionPane.showMessageDialog(this, msg, titleMsg, errorCode);
+            if(openDialogs < MAX_DIALOG_COUNT) {
+                openDialogs++;
+                JOptionPane.showMessageDialog(this.frame, msg, titleMsg, errorCode);
             } else {
-                System.err.println("Too many error dialogs called...");
-                System.exit(1);
+                fatalError("Too many error dialogs called", null);
             }
             openDialogs--;
         }
     }
 
-    // Runnable to send ping requests
-    private class ClientNetworkHandler implements Runnable {
 
-        private long lastPingRequest = java.time.Instant.now().toEpochMilli();
-
-        @Override
-        public void run() {
-
-            boolean startedHandler = false;
-
-            while(runningProgram) {
-                
-                try {
-                    if(!socket.isConnected() || socket.isClosed()) {
-                        throw new IOException("Socket connection has been lost...");
-                    }
-                    long now = java.time.Instant.now().toEpochMilli();
-                    if(now - lastPingRequest > 15000) {
-                        sendDataPackage(new KeepAlivePack(), MessageType.KEEP_ALIVE);
-                        lastPingRequest = now;
-                    }
-
-                } catch(IOException ioe) {
-                    runningProgram = false;
-                    showMessageDialog("Failed to send keep alive request, Program will end shortly...", "Network Error", JOptionPane.ERROR_MESSAGE);
-                    exitProgram();
-                }
-
-                if(isInLobby && !startedHandler) {
-                    startedHandler = true;
-                    (new SwingWorker<Void, String>() {
-                        private Exception backgroundException = null;
-
-                        @Override
-                        protected Void doInBackground() {
-                            try {
-                                while (isInLobby && !isCancelled()) {
-                                    String packet = RawPacketHandler.readRawPacket(reader);
-                                    publish(packet);
-                                }
-                            } catch (Exception e) {
-                                backgroundException = e;
-                                cancel(true);
-                            }
-                            return null;
-                        }
-
-                        @Override
-                        protected void process(List<String> packets) {
-                            for (String rawJson : packets) {
-                                try {
-                                    JSONObject obj = new JSONObject(rawJson);
-                                    String type = obj.getString("type");
-
-                                    JSONObject innerData = obj.getJSONObject("data");
-                                    String innerDataString = innerData.toString();
-                                    MessageType mt = MessageType.valueOf(type);
-
-                                    if (mt == MessageType.LOBBY_JOIN) {
-                                        LobbyJoinPack ljp = LobbyJoinPack.fromJSON(innerDataString);
-                                        usersInGame = ljp.getPlayers();
-                                        if (usersPanel != null) {
-                                            usersPanel.removeAll();
-                                            for (String p : usersInGame) {
-                                                usersPanel.add(new JLabel(p.equals(username) ? p + " (You)" : p));
-                                            }
-                                            usersPanel.revalidate();
-                                            usersPanel.repaint();
-                                        }
-                                    } else if (mt == MessageType.LOBBY_LEAVE) {
-                                        LobbyLeavePack llp = LobbyLeavePack.fromJSON(innerDataString);
-                                        usersInGame.remove(llp.getUsername());
-                                        if (usersPanel != null) {
-                                            usersPanel.removeAll();
-                                            for (String p : usersInGame) {
-                                                usersPanel.add(new JLabel(p.equals(username) ? p + " (You)" : p));
-                                            }
-                                            usersPanel.revalidate();
-                                            usersPanel.repaint();
-                                        }
-                                    }
-                                } catch (Exception e) {
-                                    e.printStackTrace();
-                                }
-                            }
-                        }
-
-                        @Override
-                        protected void done() {
-                            if (backgroundException != null) {
-                                SwingUtilities.invokeLater(() -> {
-                                    JOptionPane.showMessageDialog(null,
-                                        "Network error occurred. You may have been disconnected.",
-                                        "Network Error",
-                                        JOptionPane.ERROR_MESSAGE);
-                                    System.exit(0);
-                                });
-                            }
-                        }
-
-                    }).execute();
-
-                }
-
-                if(!isInLobby && startedHandler) {
-                    startedHandler = false;
-                }
-
-            }
-        }
-
+    // If there is a fatal error (one that would completely impede program function), print the error and exit.
+    private void fatalError(String message, Exception e) {
+        System.err.println("FATAL Error: " + message);
+        if(e != null) e.printStackTrace(System.err);
+        System.exit(1);
     }
+
+    // Basic getters and setters for boolean values
+    public synchronized boolean isRunning() { return this.isRunning; }
+    public synchronized void setRunning(boolean running) { this.isRunning = running; }
+    
+    public synchronized boolean isPlaying() { return this.isPlaying; }
+    public synchronized void setPlaying(boolean playing) { this.isPlaying = playing; }
+    
+    public synchronized boolean isHosting() { return this.isHosting; }
+    public synchronized void setHosting(boolean host) { this.isHosting = host; }
 
 }

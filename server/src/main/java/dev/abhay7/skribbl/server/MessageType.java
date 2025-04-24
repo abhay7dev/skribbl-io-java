@@ -9,4 +9,5 @@ public enum MessageType {
     FETCH_WORDLIST,
     KEEP_ALIVE,
     GAME_DATA,
+    SERVER_LEAVE
 }

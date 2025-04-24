@@ -35,7 +35,9 @@ public class LobbyListPack extends DataPackage {
     public ArrayList<String[]> getLobbies() { return this.lobbiesData; }
 
     public static LobbyListPack fromJSON(String json) throws JSONException {
-        JSONObject jo = new JSONObject(json);
+        return fromJSON(new JSONObject(json));
+    }
+    public static LobbyListPack fromJSON(JSONObject jo) throws JSONException {
         boolean isServerRequest = jo.getBoolean("isServerRequest");
     
         if (isServerRequest) return new LobbyListPack();
