@@ -8,6 +8,8 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.net.Socket;
 import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.Map;
 
 import javax.swing.Box;
 import javax.swing.BoxLayout;
@@ -47,8 +49,9 @@ public class Client {
     private String lobbiesListTitle;
     private String inGameTitle;
 
+    private Map<String, Integer> currentPlayersMap;
     private ArrayList<String> currentPlayersList;
-    
+    private ArrayList<String> playersWhoHavePlayed;
 
     private JPanel currentlyDisplayedPanel;
     private JPanel usersPanel;
@@ -110,7 +113,9 @@ public class Client {
             currentlyDisplayedPanel = getLobbiesPanel();
             frame.add(currentlyDisplayedPanel);
 
+            currentPlayersMap = new HashMap<String, Integer>();
             currentPlayersList = new ArrayList<String>();
+            playersWhoHavePlayed = new ArrayList<String>();
             this.setPlaying(false);
             this.setHosting(false);
             frame.setVisible(true);
@@ -260,11 +265,8 @@ public class Client {
                         return networkHandler.createPublicLobby(lobbyArgs[0]).isSuccess();
                     } else if(lobbyArgs.length == 2) {
                         // TODO: Implement private lobbies
-                        // return false;
-
-
-                        // private lobbies will just be password encrypted but still public 
                         return networkHandler.createPublicLobby(lobbyArgs[0]).isSuccess();
+                        // return false;
                     }
                     return false;
                 }
@@ -280,6 +282,7 @@ public class Client {
                         isPlaying = true;
                         isHosting = true;
                         currentPlayersList.add(username);
+                        currentPlayersMap.put(username, 0);
                         frame.remove(currentlyDisplayedPanel);
                         currentlyDisplayedPanel = getGamePanel(lobbyArgs[0]);
                         frame.add(currentlyDisplayedPanel);
@@ -345,9 +348,9 @@ public class Client {
 
     // Returns the game panel where actual gameplay will happen
     private JPanel getGamePanel(String lobName) {
-        return getGamePanel(lobName, this.currentPlayersList, false);
+        return getGamePanel(lobName, this.currentPlayersMap, false);
     }
-    private JPanel getGamePanel(String lobName, ArrayList<String> players, boolean isStarted) {
+    private JPanel getGamePanel(String lobName, Map<String, Integer> players, boolean isStarted) {
         JPanel toRet = new JPanel();
         toRet.setLayout(new BorderLayout(10, 10));
         toRet.setPreferredSize(new Dimension(WIDTH, HEIGHT));
@@ -358,8 +361,8 @@ public class Client {
         usersPanel = new JPanel();
         usersPanel.setLayout(new BoxLayout(usersPanel, BoxLayout.Y_AXIS));
 
-        for(String p: players) {
-            usersPanel.add(new JLabel(p.equals(this.username) ? p + " (You)" : p));
+        for(String p: players.keySet()) {
+            usersPanel.add(new JLabel((p.equals(this.username) ? p + " (You)" : p) + " - " + players.get(p) + " Points"));
         }
         
         JScrollPane usersScrollPane = new JScrollPane(usersPanel);
@@ -402,11 +405,35 @@ public class Client {
             sendMessage(messageArea, chatPanel);
         });
 
+        JButton startLobbyButton = null;
+        if(this.isHosting()) {
+            startLobbyButton = new JButton("Start lobby");
+            startLobbyButton.setPreferredSize(new Dimension(WIDTH / 15, HEIGHT * 1 / 20));
+            startLobbyButton.addActionListener((_) -> {
+                if(this.getCurrentPlayersList().size() > 1) {
+                    try {
+                        String player = chooseRandomPlayer();
+                        if(player != null) {
+                            networkHandler.startLobby(player);
+                            eastWrapper.remove(eastWrapper.getComponent(eastWrapper.getComponentCount() - 1));
+                            eastWrapper.revalidate();
+                            eastWrapper.repaint();
+                        }
+                    } catch(Exception e) {
+                        System.out.println(e);
+                    }
+                } else {
+                    showMessageDialog("Insufficient number of players in lobby", "Lobby Start Failure", JOptionPane.INFORMATION_MESSAGE);
+                }
+            });
+        }
+
         sendMessagePanel.add(messageArea);
         sendMessagePanel.add(sendMessageButton);
 
         eastWrapper.add(chatScrollPane);
         eastWrapper.add(sendMessagePanel);
+        if(startLobbyButton != null) eastWrapper.add(startLobbyButton);
 
         toRet.add(eastWrapper, BorderLayout.EAST);
 
@@ -415,6 +442,17 @@ public class Client {
 
         return toRet;
     }
+
+    private String chooseRandomPlayer() {
+        if(playersWhoHavePlayed.size() < currentPlayersList.size()) {
+            String player = currentPlayersList.get(playersWhoHavePlayed.size());
+            playersWhoHavePlayed.add(player);
+            System.out.println(player);
+            return player;  
+        }
+        return null;
+    }
+
 
     private void sendMessage(JTextField messageArea, JTextArea chatPanel) {
         if(messageArea.getText().isBlank()) return;
@@ -449,7 +487,9 @@ public class Client {
     private void leaveLobby() {
         this.isPlaying = false;
         this.isHosting = false;
-        this.currentPlayersList = new ArrayList<String>();
+        this.currentPlayersList.clear();
+        this.currentPlayersMap.clear();;
+        this.playersWhoHavePlayed.clear();
         (new SwingWorker<Void, Void>() {
 
             @Override
@@ -512,13 +552,13 @@ public class Client {
                     isPlaying = true;
                     isHosting = false;
                     currentPlayersList.addAll(ljp.getPlayers());
+                    currentPlayersList.forEach((pl) -> {
+                        currentPlayersMap.put(pl, 0);
+                    });
                     frame.remove(currentlyDisplayedPanel);
                     currentlyDisplayedPanel = getGamePanel(lobName);
                     frame.add(currentlyDisplayedPanel);
                     frame.setTitle(inGameTitle);
-
-                    // TODO: If ljp.isStarted(), do some other stuff
-
                     frame.revalidate();
                     frame.repaint();
                 }
@@ -528,12 +568,17 @@ public class Client {
     }
 
     protected void updatePlayerList(ArrayList<String> usernames) {
-        this.currentPlayersList = usernames;
+        for(String username: usernames) {
+            if(!this.currentPlayersList.contains(username)) {
+                this.currentPlayersList.add(username);
+                this.currentPlayersMap.put(username, 0);
+            }
+        }
         if (usersPanel != null) {
             SwingUtilities.invokeLater(() -> {
                 usersPanel.removeAll();
                 for (String p : this.currentPlayersList) {
-                    usersPanel.add(new JLabel(p.equals(username) ? p + " (You)" : p));
+                    usersPanel.add(new JLabel((p.equals(this.username) ? p + " (You)" : p) + " - " + currentPlayersMap.get(p) + " Points"));
                 }
                 usersPanel.revalidate();
                 usersPanel.repaint();
@@ -620,4 +665,5 @@ public class Client {
     protected synchronized ArrayList<String> getCurrentPlayersList() { return this.currentPlayersList; }
     protected NetworkHandler getNetworkHandler() { return this.networkHandler; }
     protected Board getBoard() { return this.board; }
+    protected String getUsername() { return this.username; }
 }

@@ -28,6 +28,7 @@ import dev.abhay7.skribbl.server.datapacks.LobbyInitPack;
 import dev.abhay7.skribbl.server.datapacks.LobbyJoinPack;
 import dev.abhay7.skribbl.server.datapacks.LobbyLeavePack;
 import dev.abhay7.skribbl.server.datapacks.LobbyListPack;
+import dev.abhay7.skribbl.server.datapacks.LobbyStartPack;
 import dev.abhay7.skribbl.server.datapacks.ServerLeavePack;
 
 public class NetworkHandler extends Thread {
@@ -134,13 +135,22 @@ public class NetworkHandler extends Thread {
                 String username =  LobbyLeavePack.fromJSON(packet.getData()).getUsername();
                 client.getCurrentPlayersList().remove(username);
                 client.updatePlayerList(client.getCurrentPlayersList());
+                break;    
+            case MessageType.LOBBY_START:;
+                System.out.println(packet.getData());
+                String firstPlayer = LobbyStartPack.fromJSON(packet.getData()).getFirstPlayer();
+                if(client.getUsername().equals(firstPlayer)) {
+                    client.getBoard().setDrawing(true);
+                } else {
+                    client.getBoard().setDrawing(false);
+                }
+                client.updateMessages("GAME STARTED");
+                break;
             case MessageType.GAME_DATA:
                 if(packet.getData().has("message") && !packet.getData().getString("message").isBlank()) {
                     client.updateMessages(packet.getData().getString("message"));
                 } else /* if(packet.getData().has("image")) */ {
-                    System.out.println("Has image");
                     if(client.getBoard().getCanvas() != null) {
-                        System.out.println("board isnt null");
                         GameDataPack gdp = GameDataPack.fromJSON(packet.getData());
                         if(gdp != null) this.client.getBoard().getCanvas().setImage(gdp.getImage());
                     }
@@ -232,17 +242,24 @@ public class NetworkHandler extends Thread {
     }
 
     // Send a message
-    public synchronized void sendMessage(String msg) throws IOException, JSONException, InterruptedException, ExecutionException, TimeoutException {
+    protected synchronized void sendMessage(String msg) throws IOException, JSONException, InterruptedException, ExecutionException, TimeoutException {
         this.setWriting(true);
         GameDataPack gdp = new GameDataPack(msg);
         sendDataPackage(gdp, MessageType.GAME_DATA);
         this.setWriting(false);
     }
 
-    public synchronized void sendBoard(BufferedImage image) throws IOException, JSONException, InterruptedException, ExecutionException, TimeoutException {
+    protected synchronized void sendBoard(BufferedImage image) throws IOException, JSONException, InterruptedException, ExecutionException, TimeoutException {
         this.setWriting(true);
         GameDataPack gdp = new GameDataPack(image);
         sendDataPackage(gdp, MessageType.GAME_DATA);
+        this.setWriting(false);
+    }
+
+    protected synchronized void startLobby(String firstPlayer) throws IOException, JSONException, InterruptedException, ExecutionException, TimeoutException {
+        this.setWriting(true);
+        LobbyStartPack lsp = new LobbyStartPack(firstPlayer);
+        sendDataPackage(lsp, MessageType.LOBBY_START);
         this.setWriting(false);
     }
 

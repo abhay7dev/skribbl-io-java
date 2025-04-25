@@ -225,6 +225,9 @@ public class Server {
                         case LOBBY_LIST:
                             receivedClientData = LobbyListPack.fromJSON(innerDataString);
                             break;
+                        case LOBBY_START:
+                            receivedClientData = LobbyStartPack.fromJSON(innerDataString);
+                            break;
                         case LOBBY_LEAVE:
                             receivedClientData = LobbyLeavePack.fromJSON(innerDataString);
                             break;
@@ -330,12 +333,26 @@ public class Server {
                         lob = null;
                     }
 
+                } else if(dataPackage instanceof LobbyStartPack) {
+                    System.out.println("Hit this");
+                    String firstPlayer = ((LobbyStartPack) dataPackage).getFirstPlayer();
+                    if(this.isInLobby() && this.getCurrentLobby().isHost(this)) {
+                        this.getCurrentLobby().start();
+                    }
+                    try {
+                        System.out.println(firstPlayer);
+                        LobbyStartPack lsp = new LobbyStartPack(false, firstPlayer);
+                        System.out.println(lsp.getFirstPlayer());
+                        this.getCurrentLobby().notifyAll(lsp, this, MessageType.LOBBY_START);
+                    } catch(IOException ioe) {
+                        System.out.println("Failed to notify of lobby start");
+                    }
                 } else if (dataPackage instanceof LobbyJoinPack) {
 
                     String lobName = ((LobbyJoinPack) dataPackage).getLobbyName();
 
                     Lobby lob = lobbies.getLobbyByName(lobName);
-                    if (this.username != null && lob != null) {
+                    if (this.username != null && lob != null && !lob.isStarted()) {
                         try {
                             lob.addClient(this);
                             sendDataPackage(new LobbyJoinPack(lob.getPlayerNames(), lob.isStarted()), MessageType.LOBBY_JOIN);
