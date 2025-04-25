@@ -48,6 +48,7 @@ public class Client {
     private String inGameTitle;
 
     private ArrayList<String> currentPlayersList;
+    
 
     private JPanel currentlyDisplayedPanel;
     private JPanel usersPanel;
@@ -259,7 +260,11 @@ public class Client {
                         return networkHandler.createPublicLobby(lobbyArgs[0]).isSuccess();
                     } else if(lobbyArgs.length == 2) {
                         // TODO: Implement private lobbies
-                        return false;
+                        // return false;
+
+
+                        // private lobbies will just be password encrypted but still public 
+                        return networkHandler.createPublicLobby(lobbyArgs[0]).isSuccess();
                     }
                     return false;
                 }
