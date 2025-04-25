@@ -36,7 +36,7 @@ public class Board extends JPanel {
         currentColor = Color.BLACK;
         this.size = 10;
 
-        isDrawing = true;
+        isDrawing = false;
 
         canvas = new Canvas((int) (WIDTH * 0.9), (int) (HEIGHT * 0.7));
 
