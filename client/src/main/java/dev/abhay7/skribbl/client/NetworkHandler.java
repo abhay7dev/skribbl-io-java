@@ -30,6 +30,7 @@ import dev.abhay7.skribbl.server.datapacks.LobbyLeavePack;
 import dev.abhay7.skribbl.server.datapacks.LobbyListPack;
 import dev.abhay7.skribbl.server.datapacks.LobbyStartPack;
 import dev.abhay7.skribbl.server.datapacks.ServerLeavePack;
+import dev.abhay7.skribbl.server.datapacks.WordsFetchPack;
 
 public class NetworkHandler extends Thread {
 
@@ -136,11 +137,11 @@ public class NetworkHandler extends Thread {
                 client.getCurrentPlayersList().remove(username);
                 client.updatePlayerList(client.getCurrentPlayersList());
                 break;    
-            case MessageType.LOBBY_START:;
-                System.out.println(packet.getData());
+            case MessageType.LOBBY_START:
                 String firstPlayer = LobbyStartPack.fromJSON(packet.getData()).getFirstPlayer();
                 if(client.getUsername().equals(firstPlayer)) {
                     client.getBoard().setDrawing(true);
+                    client.startDrawing();
                 } else {
                     client.getBoard().setDrawing(false);
                 }
@@ -239,6 +240,22 @@ public class NetworkHandler extends Thread {
         llp = LobbyLeavePack.fromJSON(json);
 
         return llp;
+    }
+
+    // Leave Lobby Method
+    public synchronized WordsFetchPack getWords() throws IOException, JSONException, InterruptedException, ExecutionException, TimeoutException {
+        this.setWriting(true);
+        WordsFetchPack wfp = new WordsFetchPack();
+        sendDataPackage(wfp, MessageType.FETCH_WORDLIST);
+        this.setWriting(false);
+        
+        CompletableFuture<JSONObject> responseFuture = new CompletableFuture<>();
+        this.pendingResponses.put(MessageType.FETCH_WORDLIST, responseFuture);
+
+        JSONObject json = responseFuture.get(5, TimeUnit.SECONDS);
+        wfp = WordsFetchPack.fromJSON(json);
+
+        return wfp;
     }
 
     // Send a message

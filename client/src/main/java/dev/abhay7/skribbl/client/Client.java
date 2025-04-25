@@ -27,6 +27,7 @@ import javax.swing.SwingWorker;
 import javax.swing.border.EmptyBorder;
 
 import dev.abhay7.skribbl.server.datapacks.LobbyJoinPack;
+import dev.abhay7.skribbl.server.datapacks.WordsFetchPack;
 
 public class Client {
 
@@ -52,6 +53,11 @@ public class Client {
     private Map<String, Integer> currentPlayersMap;
     private ArrayList<String> currentPlayersList;
     private ArrayList<String> playersWhoHavePlayed;
+    private ArrayList<String> wordsGuessed;
+
+    private String chosenWord = "";
+
+    private ArrayList<String> wordList;
 
     private JPanel currentlyDisplayedPanel;
     private JPanel usersPanel;
@@ -116,6 +122,9 @@ public class Client {
             currentPlayersMap = new HashMap<String, Integer>();
             currentPlayersList = new ArrayList<String>();
             playersWhoHavePlayed = new ArrayList<String>();
+            wordsGuessed = new ArrayList<String>();
+            wordList = new ArrayList<String>();
+
             this.setPlaying(false);
             this.setHosting(false);
             frame.setVisible(true);
@@ -482,14 +491,35 @@ public class Client {
 
         }).execute();
     }
+
+    protected void startDrawing() {
+        if(this.getBoard().isDrawing()) {
+            if(wordList.isEmpty()) {
+                try {
+                    WordsFetchPack wfp = this.networkHandler.getWords();
+                    this.wordList.addAll(wfp.getWordList());
+                } catch(Exception e) {
+                    System.out.println("Error fetching words: " + e);
+                }
+            }
+            String chosenWord = this.wordList.get((int) (this.wordList.size() * (Math.random())));
+            while(this.wordsGuessed.contains(chosenWord)) {
+                chosenWord = this.wordList.get((int) (this.wordList.size() * (Math.random())));
+            }
+            this.board.addWordPhrase(this.chosenWord);
+        }
+    }
     
     // Leave a lobby
     private void leaveLobby() {
         this.isPlaying = false;
         this.isHosting = false;
+        
         this.currentPlayersList.clear();
-        this.currentPlayersMap.clear();;
+        this.currentPlayersMap.clear();
         this.playersWhoHavePlayed.clear();
+        this.wordsGuessed.clear();
+
         (new SwingWorker<Void, Void>() {
 
             @Override

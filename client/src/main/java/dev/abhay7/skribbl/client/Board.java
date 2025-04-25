@@ -18,6 +18,7 @@ import javax.swing.BorderFactory;
 import javax.swing.BoxLayout;
 import javax.swing.JButton;
 import javax.swing.JComponent;
+import javax.swing.JLabel;
 import javax.swing.JPanel;
 
 public class Board extends JPanel {
@@ -75,6 +76,14 @@ public class Board extends JPanel {
     public boolean isDrawing() { return this.isDrawing; }
     public void setDrawing(boolean drawing) { this.isDrawing = drawing; }
     public Canvas getCanvas() { return this.canvas; }
+
+    protected void addWordPhrase(String phrase) {
+        JLabel jl = new JLabel(phrase.substring(0, 1).toUpperCase() + phrase.substring(1, phrase.length()));
+        jl.setFont(getFont().deriveFont(20.0f));
+        this.add(jl);
+        this.revalidate();
+        this.repaint();
+    }
 
     private JButton getColorButton(Color c) {
         JButton but = new JButton();
