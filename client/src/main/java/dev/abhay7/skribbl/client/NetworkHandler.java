@@ -1,5 +1,6 @@
 package dev.abhay7.skribbl.client;
 
+import java.awt.image.BufferedImage;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -79,6 +80,7 @@ public class NetworkHandler extends Thread {
                             lastPingRequest = now;
                         }
                     } catch(IOException ioe) {
+                        System.out.println(ioe);
                         // TODO: Implement error handling if we are unable to send a ping request
                     } finally {
                         setWriting(false);
@@ -93,6 +95,7 @@ public class NetworkHandler extends Thread {
                     ReceivedPacket packet = generalQueue.take(); // blocks if empty
                     handlePacket(packet);
                 } catch (InterruptedException e) {
+                    System.out.println(e);
                     // TODO: Implement error handling if we are unable to read a packet
                 }
             }
@@ -106,8 +109,6 @@ public class NetworkHandler extends Thread {
 
                 JSONObject data = obj.getJSONObject("data");
 
-                System.out.println(data.toString());
-
                 if (pendingResponses.containsKey(type)) {
                     pendingResponses.get(type).complete(data);
                     pendingResponses.remove(type);
@@ -116,6 +117,7 @@ public class NetworkHandler extends Thread {
                 }
 
             } catch(Exception e) {
+                System.out.println(e);
                 // TODO: Implement error handling if we are unable to handle a packet
             }
         }
@@ -133,10 +135,15 @@ public class NetworkHandler extends Thread {
                 client.getCurrentPlayersList().remove(username);
                 client.updatePlayerList(client.getCurrentPlayersList());
             case MessageType.GAME_DATA:
-                if(packet.getData().has("message")) {
+                if(packet.getData().has("message") && !packet.getData().getString("message").isBlank()) {
                     client.updateMessages(packet.getData().getString("message"));
-                } else {
-
+                } else /* if(packet.getData().has("image")) */ {
+                    System.out.println("Has image");
+                    if(client.getBoard().getCanvas() != null) {
+                        System.out.println("board isnt null");
+                        GameDataPack gdp = GameDataPack.fromJSON(packet.getData());
+                        if(gdp != null) this.client.getBoard().getCanvas().setImage(gdp.getImage());
+                    }
                 }
                 break;
             default:
@@ -232,6 +239,12 @@ public class NetworkHandler extends Thread {
         this.setWriting(false);
     }
 
+    public synchronized void sendBoard(BufferedImage image) throws IOException, JSONException, InterruptedException, ExecutionException, TimeoutException {
+        this.setWriting(true);
+        GameDataPack gdp = new GameDataPack(image);
+        sendDataPackage(gdp, MessageType.GAME_DATA);
+        this.setWriting(false);
+    }
 
     // Disconnect method that cleanly closes this thread
     public synchronized void disconnect() throws IOException {

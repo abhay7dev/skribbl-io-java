@@ -405,9 +405,8 @@ public class Client {
 
         toRet.add(eastWrapper, BorderLayout.EAST);
 
-        board = new Board(networkHandler);
-        board.addMouseListener(board);
-        toRet.add(board);
+        board = new Board(this, WIDTH * 2 / 3, HEIGHT * 8 / 10);
+        toRet.add(board, BorderLayout.CENTER);
 
         return toRet;
     }
@@ -470,7 +469,7 @@ public class Client {
                     chatPanel = null;
                 }
                 if(board != null) {
-                    board.removeMouseListener(board);
+                    // board.removeMouseListener(board);
                     board.removeAll();
                     board = null;
                 }
@@ -614,4 +613,6 @@ public class Client {
     public synchronized void setHosting(boolean host) { this.isHosting = host; }
 
     protected synchronized ArrayList<String> getCurrentPlayersList() { return this.currentPlayersList; }
+    protected NetworkHandler getNetworkHandler() { return this.networkHandler; }
+    protected Board getBoard() { return this.board; }
 }

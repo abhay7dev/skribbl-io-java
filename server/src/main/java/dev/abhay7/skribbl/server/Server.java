@@ -279,7 +279,7 @@ public class Server {
                 }
                 System.out.println("Disconnected " + this.username);
             } catch (Exception e) {
-                System.out.println("Failed to disconnect and terminate a user: " + this.socketId + " - " + this.username);
+                System.out.println("Failed to disconnect and terminate a user: " + this.socketId + " - " + this.username + ": " + e);
             }
         }
 
@@ -363,8 +363,11 @@ public class Server {
                 } else if(dataPackage instanceof GameDataPack) {
                     if(this.isInLobby()) {
                         try {
-                            if(((GameDataPack) dataPackage).getMessage() != "") {
-                                this.getCurrentLobby().notifyAllExceptSender(new GameDataPack(false, this.getUsername() + ": " + ((GameDataPack) dataPackage).getMessage()), this, MessageType.GAME_DATA);
+                            GameDataPack gdp = ((GameDataPack) dataPackage);
+                            if(!gdp.getMessage().isBlank()) {
+                                this.getCurrentLobby().notifyAllExceptSender(new GameDataPack(false, this.getUsername() + ": " + gdp.getMessage()), this, MessageType.GAME_DATA);
+                            } else if(gdp.getImage() != null) {
+                                this.getCurrentLobby().notifyAllExceptSender(new GameDataPack(false, gdp.getImage()), this, MessageType.GAME_DATA);
                             }
                         } catch(Exception e) {
                             System.out.println("Failed to send GameDataPack to cliens: " + e);
