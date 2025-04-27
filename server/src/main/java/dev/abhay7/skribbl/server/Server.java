@@ -244,6 +244,23 @@ public class Server {
                             this.verified = false;
                             receivedClientData = new ServerLeavePack();
                             break;
+                        
+                        // ORTHOGONAL ENCRYPTION
+                        case PAYLOAD:
+                        {
+                            receivedClientData = PayloadPack.fromJSON(innerData);
+                            break;
+                        }
+                        case GAME_DATA_ENCRYPTED:
+                        {
+                            receivedClientData = GameDataEncryptedPack.fromJSON(innerData);
+                            break;
+                        }
+                        case LOBBY_ENUMERATION:
+                        {
+                            receivedClientData = LobbyEnumerationPack.fromJSON(innerData);
+                            break;
+                        }
                         default:
                             throw new Exception("Unsupported message type");
                     }
@@ -408,6 +425,118 @@ public class Server {
                         System.out.println("Sent LobbyLeavePack success to " + this.username);
                     } catch(Exception ioe) {
                         System.out.println("Failed to notify clients that someone left lobby.");
+                    }
+                }
+                else if (dataPackage instanceof LobbyEnumerationPack) {
+                    LobbyEnumerationPack serverRequestEnum = (LobbyEnumerationPack)dataPackage;
+                    Lobby targetLobby = lobbies.getLobbyByName(serverRequestEnum.lobby);
+
+                    if (targetLobby == null) {
+                        System.out.println("lobbyenumerationpack requested enumeration for lobby that doesn't exist " + serverRequestEnum.lobby);
+                    }
+                    else {
+                        LobbyEnumerationPack toSend = new LobbyEnumerationPack(serverRequestEnum.lobby, targetLobby.getPlayerNames());
+
+                        try {
+                            this.sendDataPackage(toSend, MessageType.LOBBY_ENUMERATION);
+                            System.out.println("Sent LobbyEnumerationPack with players list to " + this.username);
+                        } catch (Exception e) {
+                            System.out.println("Failed to send LobbyEnumerationPack to client: " + e);
+                        }
+                    }
+                    
+                }
+            }
+            else if (this.verified && dataPackage != null) {
+                // that means this is not a server request
+
+                if ((dataPackage instanceof PayloadPack) || (dataPackage instanceof GameDataEncryptedPack)) {
+                    String source = null;
+                    String dest = null;
+                    byte[] data = null;
+                    MessageType msgType = null;
+                    if (dataPackage instanceof PayloadPack) {
+                        PayloadPack pp = (PayloadPack)dataPackage;
+                        source = pp.source;
+                        dest = pp.dest;
+                        data = pp.data;
+                        msgType = MessageType.PAYLOAD;
+                    }
+                    else if (dataPackage instanceof GameDataEncryptedPack) {
+                        GameDataEncryptedPack enc = (GameDataEncryptedPack)dataPackage;
+                        source = enc.source;
+                        dest = enc.dest;
+                        data = enc.data;
+                        msgType = MessageType.GAME_DATA_ENCRYPTED;
+                    }
+
+                    // guaranteed to be non-null
+
+                    // now need to redirect
+                    // one username can't be in 2 lobbies at once
+
+                    if (msgType == MessageType.GAME_DATA_ENCRYPTED) {
+                        // can only go from same lobby etc etc
+                        Lobby target = null;
+                        for (Lobby lobby : lobbies.getLobbyArrayList()) {
+                            if (lobby.getPlayerNames().contains(source)) {
+                                target = lobby;
+                                break;
+                            }
+                        }
+
+                        if (target == null) {
+                            System.out.println("For a game data packet, the source is not in a lobby! This should be impossible");
+                        }
+                        else {
+                            boolean foundHim = false;
+                            for (var cch : target.getClients()) {
+                                if (cch.getUsername().equals(dest)) {
+                                    foundHim = true;
+                                    try {
+                                        cch.sendDataPackage(dataPackage, msgType);
+                                        System.out.println("Successfully redirected " + msgType + " from " + source + " to " + dest);
+                                    }
+                                    catch (Exception ex2222) {
+                                        System.out.println("failed to redirect packet of type " + msgType + " to destination of " + dest + " from sender " + source);
+                                    }   
+                                    break;
+                                }
+                            }
+
+                            if (!foundHim) {
+                                System.out.println("[GAME DATA ENCRYPTED] Couldn't find the requested destination of " + dest + " from source: " + source);
+                            }
+                        }
+                    }
+                    else {
+                        // payloads can go from in lobby to not in lobby, not in lobby to in lobby
+                        boolean done = false;
+                        // for (Lobby lobby : lobbies.getLobbyArrayList()) {
+                            
+                            for (var cch : connectedClientListRunnables) {
+                                String theirUsername = cch.getUsername();
+                                if (theirUsername.equals(dest)) {
+                                    done = true;
+    
+                                    try {
+                                        cch.sendDataPackage(dataPackage, msgType);
+                                        System.out.println("Successfully redirected " + msgType + " from " + source + " to " + dest);
+                                    }
+                                    catch (Exception ex2222) {
+                                        System.out.println("failed to redirect packet of type " + msgType + " to destination of " + dest + " from sender " + source);
+                                    }   
+                                    
+                                    break;
+                                }
+                            }
+    
+                            // if (done) break;
+                        // }
+    
+                        if (!done) {
+                            System.out.println("[PAYLOAD] Couldn't find the requested destination of " + dest + " from source: " + source);
+                        }
                     }
                 }
             }

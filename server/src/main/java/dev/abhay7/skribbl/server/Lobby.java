@@ -16,16 +16,20 @@ public class Lobby {
 
     private CopyOnWriteArrayList<Server.ClientCommsHandler> clients;
 
-    public Lobby(String name, Server.ClientCommsHandler host) {
+    public boolean isPrivate;
+
+    public Lobby(String name, boolean isPrivate, Server.ClientCommsHandler host) {
         this.name = name;
         this.host = host;
         this.started = false;
         clients = new CopyOnWriteArrayList<Server.ClientCommsHandler>();
         clients.add(this.host);
+
+        this.isPrivate = isPrivate;
     }
 
     public Lobby(LobbyInitPack lip, Server.ClientCommsHandler host) {
-        this(lip.getLobName(), host);
+        this(lip.getLobName(), lip.isPrivate, host);
     }
     
     public String getName() { return this.name; }

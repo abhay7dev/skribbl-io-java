@@ -19,6 +19,7 @@ import javax.swing.JFrame;
 import javax.swing.JLabel;
 import javax.swing.JOptionPane;
 import javax.swing.JPanel;
+import javax.swing.JPasswordField;
 import javax.swing.JScrollPane;
 import javax.swing.JTextArea;
 import javax.swing.JTextField;
@@ -26,7 +27,10 @@ import javax.swing.SwingUtilities;
 import javax.swing.SwingWorker;
 import javax.swing.border.EmptyBorder;
 
+import dev.abhay7.skribbl.client.jameskwong.pwdsignal.PWDSignalSession;
+import dev.abhay7.skribbl.client.jameskwong.pwdsignal.PWDSignalSessionState;
 import dev.abhay7.skribbl.server.datapacks.LobbyJoinPack;
+import dev.abhay7.skribbl.server.datapacks.PayloadPack;
 import dev.abhay7.skribbl.server.datapacks.WordsFetchPack;
 
 public class Client {
@@ -38,7 +42,7 @@ public class Client {
 
     private JFrame frame;
 
-    private String username;
+    public String username;
     private String serverInet;
     private int serverPort;
 
@@ -50,11 +54,12 @@ public class Client {
     private String lobbiesListTitle;
     private String inGameTitle;
 
+
     private Map<String, Integer> currentPlayersMap;
     private ArrayList<String> currentPlayersList;
     private ArrayList<String> playersWhoHavePlayed;
     private ArrayList<String> wordsGuessed;
-
+    
     private String chosenWord = "";
 
     private ArrayList<String> wordList;
@@ -72,6 +77,12 @@ public class Client {
 
     private static final byte MAX_DIALOG_COUNT = 5;
     private byte openDialogs;
+
+    public volatile boolean inPrivate;
+
+    public Map<String, PWDSignalSession> privateSessions;
+
+    public volatile String privLobbyPassword;
 
     public Client(String... args) {
         if(args.length < 3 || args[0].isBlank() || args[1].isBlank() || args[2].equals("0")) {
@@ -245,9 +256,15 @@ public class Client {
                         jb.add(new JLabel(lob[2]));
                         jb.add(new JLabel(lob[0]));
                         jb.add(new JLabel("Players: " + lob[1]));
+                        Boolean isPrivate = Boolean.parseBoolean(lob[3]);
+                        jb.add(new JLabel(isPrivate ? "PRIVATE" : "PUBLIC"));
                         jb.setAlignmentX(JButton.CENTER_ALIGNMENT);
                         jb.setPreferredSize(new Dimension((int) (d.getWidth() / 3.5), (int) d.getHeight() / 7));
                         jb.addActionListener((_) -> {
+                            if (isPrivate ){
+                                joinPrivateLobby(lob[0]);
+                                return;
+                            }
                             joinPublicLobby(lob[0]);
                         });
                         lobbiesListPanel.add(jb);
@@ -271,11 +288,10 @@ public class Client {
                 @Override
                 protected Boolean doInBackground() throws Exception {
                     if(lobbyArgs.length == 1) {
-                        return networkHandler.createPublicLobby(lobbyArgs[0]).isSuccess();
+                        return networkHandler.createLobby(lobbyArgs[0], false).isSuccess();
                     } else if(lobbyArgs.length == 2) {
-                        // TODO: Implement private lobbies
-                        return networkHandler.createPublicLobby(lobbyArgs[0]).isSuccess();
-                        // return false;
+                        // private lobby
+                        return networkHandler.createLobby(lobbyArgs[0], true).isSuccess();
                     }
                     return false;
                 }
@@ -290,6 +306,10 @@ public class Client {
                     if(createdLobby) {
                         isPlaying = true;
                         isHosting = true;
+                        inPrivate = lobbyArgs.length == 2;
+                        privateSessions = new HashMap<>();
+                        
+                        privLobbyPassword = lobbyArgs.length == 2 ? lobbyArgs[1] : null; 
                         currentPlayersList.add(username);
                         currentPlayersMap.put(username, 0);
                         frame.remove(currentlyDisplayedPanel);
@@ -302,6 +322,75 @@ public class Client {
                 }
 
             }).execute();
+        }
+    }
+
+    public void withPayload(PayloadPack pp) {
+        if (!inPrivate) return;
+        if (!isPlaying) return;
+
+        if (!privateSessions.containsKey(pp.source)) {
+            try {
+                privateSessions.put(pp.source, new PWDSignalSession(privLobbyPassword, false));
+            } catch (Exception ex) {
+                System.out.println("Failed responding to pp; couldnt create initial session");
+                return;
+            }
+        }
+
+        PWDSignalSession session = privateSessions.get(pp.source);
+
+        switch (session.getState()) {
+            case PWDSignalSessionState.INITIALIZED:
+                {
+                    // first payload received, need to give them it too
+                    try {
+                        byte[] data = session.createPayload1();
+                        session.acceptPayload1(pp.data, 0);
+                        networkHandler.sendPayload(pp.source, data, username);
+                        System.out.println("Accepted and sent payload 1");
+                    }   
+                    catch (Exception ex) {
+                        System.out.println("Failed responding to pp; payload 1: " + ex.getMessage());
+                        privateSessions.remove(pp.source);
+                    }
+                    
+                    break;
+                }
+            case PWDSignalSessionState.PAYLOAD_1_VALIDATED:
+                {
+                    // second payload received, need to give them it too
+                    try {
+                        byte[] data = session.createPayload2();
+                        session.acceptPayload2(pp.data, 0);
+                        networkHandler.sendPayload(pp.source, data, username);
+                        System.out.println("Accepted and sent payload 2");
+                    }   
+                    catch (Exception ex) {
+                        System.out.println("Failed responding to pp; payload 2: " + ex.getMessage());
+                        privateSessions.remove(pp.source);
+                    }
+                    break;
+                }
+            case PWDSignalSessionState.PAYLOAD_2_VALIDATED:
+                {
+                    // 3rd payload received, need to give them it too
+                    try {
+                        byte[] data = session.createPayload3();
+                        session.acceptPayload3(pp.data, 0);
+                        networkHandler.sendPayload(pp.source, data, username);
+                        System.out.println("Accepted and sent payload 3");
+                    }   
+                    catch (Exception ex) {
+                        System.out.println("Failed responding to pp; payload 3: " + ex.getMessage());
+                        privateSessions.remove(pp.source);
+                    }
+                    break;
+                }
+            default:{
+                System.out.println("ILLEGAL CASE WTF: " + session.getState());
+                return;
+            }
         }
     }
 
@@ -514,6 +603,10 @@ public class Client {
     private void leaveLobby() {
         this.isPlaying = false;
         this.isHosting = false;
+        inPrivate = false;
+        privLobbyPassword = null;
+        if (privateSessions != null)
+            privateSessions.clear();
         
         this.currentPlayersList.clear();
         this.currentPlayersMap.clear();
@@ -581,6 +674,10 @@ public class Client {
                 if(ljp != null && ljp.isSuccess()) {
                     isPlaying = true;
                     isHosting = false;
+                    privLobbyPassword = null;
+                    if (privateSessions != null)
+                        privateSessions.clear();
+                    inPrivate = false;
                     currentPlayersList.addAll(ljp.getPlayers());
                     currentPlayersList.forEach((pl) -> {
                         currentPlayersMap.put(pl, 0);
@@ -595,6 +692,64 @@ public class Client {
             }
 
         }).execute();
+    }
+
+    private void joinPrivateLobby(String lobName) {
+        JPasswordField passwordField = new JPasswordField();
+        Object[] message = {
+                "Enter password for lobby '" + lobName + "':", passwordField
+        };
+        int option = JOptionPane.showConfirmDialog(frame, message, "Enter Password", JOptionPane.OK_CANCEL_OPTION, JOptionPane.PLAIN_MESSAGE);
+        if (option == JOptionPane.OK_OPTION) {
+            String password = new String(passwordField.getPassword());
+            if (password.isEmpty()) {
+                showMessageDialog("Password cannot be empty", "error", JOptionPane.ERROR_MESSAGE);
+                return;
+            }
+
+            this.currentPlayersList = new ArrayList<String>();
+            this.inGameTitle = "skribbl.io (Java) - " + lobName; 
+            (new SwingWorker<Tuple<HashMap<String, PWDSignalSession>, LobbyJoinPack>, Void>() {
+
+                @Override
+                protected Tuple<HashMap<String, PWDSignalSession>, LobbyJoinPack> doInBackground() throws Exception {
+                    return networkHandler.joinPrivateLobby(password, lobName);
+                }
+
+                protected void done() {
+                    Tuple<HashMap<String, PWDSignalSession>, LobbyJoinPack> ljp = null;
+                    try {
+                        ljp = get();
+                    } catch (Exception e) {
+                        showMessageDialog("Failed to join private lobby: " + e, "Lobby Join Error", JOptionPane.ERROR_MESSAGE);
+                    }
+
+                    if(ljp != null) {
+                        isPlaying = true;
+                        isHosting = false;
+                        inPrivate = true;
+                        privLobbyPassword = password;
+                        privateSessions = ljp.x;
+                        currentPlayersList.addAll(ljp.y.getPlayers());
+                        currentPlayersList.forEach((pl) -> {
+                            currentPlayersMap.put(pl, 0);
+                        });
+                        frame.remove(currentlyDisplayedPanel);
+                        currentlyDisplayedPanel = getGamePanel(lobName);
+                        frame.add(currentlyDisplayedPanel);
+                        frame.setTitle(inGameTitle);
+                        frame.revalidate();
+                        frame.repaint();
+
+                        System.out.println("Successfully joined private lobby!!!");
+                    }
+                }
+
+            }).execute();
+        }
+        else {
+            // cancelled jonining
+        }
     }
 
     protected void updatePlayerList(ArrayList<String> usernames) {

@@ -217,6 +217,14 @@ public class PWDSignalSession {
         return cipherEngine.decryptReceivePacket(cipherText, offset, length);
     }
 
+    public byte[] encryptSendPacket(byte[] message) throws Exception {
+        return encryptSendPacket(message, 0, message.length);
+    }
+
+    public byte[] decryptReceivePacket(byte[] cipherText) throws Exception {
+        return decryptReceivePacket(cipherText, 0, cipherText.length);
+    }
+
     // MARK: Misc helpers
 
     // Don't log sensitive info...

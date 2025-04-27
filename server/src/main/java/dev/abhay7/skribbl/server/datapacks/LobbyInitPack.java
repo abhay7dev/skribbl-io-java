@@ -8,16 +8,21 @@ public class LobbyInitPack extends DataPackage {
     private String lobName;
     private boolean success;
 
+    // is private is meaningless for !serverRequest packets
+    public boolean isPrivate;
+
     // Server responds with whether creating the lobby was a success
     public LobbyInitPack(boolean success) {
         super(false);
         this.success = success;
+        
     }
 
     // Client requests to create a lobby with this name
-    public LobbyInitPack(String lobName) {
+    public LobbyInitPack(String lobName, boolean isPrivate) {
         super(true);
         this.lobName = lobName;
+        this.isPrivate = isPrivate;
     }
 
     public String getLobName() { return this.lobName; }
@@ -31,7 +36,8 @@ public class LobbyInitPack extends DataPackage {
     
         if (isServerRequest) {
             String lobName = jo.getString("lobName");
-            return new LobbyInitPack(lobName);
+            boolean priv = jo.getBoolean("isPrivate");
+            return new LobbyInitPack(lobName, priv);
         }
         boolean success = jo.getBoolean("success");
         return new LobbyInitPack(success);
@@ -44,6 +50,7 @@ public class LobbyInitPack extends DataPackage {
 
         if (this.isServerRequest()) {
             jo.put("lobName", this.getLobName());
+            jo.put("isPrivate", isPrivate);
         } else {
             jo.put("success", success);
         }
