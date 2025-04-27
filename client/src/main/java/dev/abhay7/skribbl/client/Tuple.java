@@ -1,8 +1,11 @@
 package dev.abhay7.skribbl.client;
 
+// Taken from stack overflow... java sucks doesn't even have a Tuple class
+// https://stackoverflow.com/a/12328838
 public class Tuple<X, Y> { 
     public final X x; 
     public final Y y; 
+    
     public Tuple(X x, Y y) { 
         this.x = x; 
         this.y = y; 

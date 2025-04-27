@@ -1,13 +1,6 @@
 package dev.abhay7.skribbl.server.datapacks;
 
-import java.io.ByteArrayInputStream;
-import java.io.ByteArrayOutputStream;
-import java.io.IOException;
 import java.util.ArrayList;
-import java.util.Base64;
-
-import javax.imageio.ImageIO;
-
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
