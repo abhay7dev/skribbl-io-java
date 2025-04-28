@@ -1,6 +1,6 @@
 package dev.abhay7.skribbl.client;
 
-import java.nio.charset.StandardCharsets;
+// import java.nio.charset.StandardCharsets;
 
 import javax.swing.Box;
 import javax.swing.BoxLayout;
@@ -12,7 +12,7 @@ import javax.swing.SwingUtilities;
 
 import com.formdev.flatlaf.FlatIntelliJLaf;
 
-import dev.abhay7.skribbl.client.jameskwong.pwdsignal.PWDSignalSession;
+// import dev.abhay7.skribbl.client.jameskwong.pwdsignal.PWDSignalSession;
 
 public class Main {
 
@@ -28,122 +28,122 @@ public class Main {
             return;
         }
 
-        try {
-            System.out.println("TEST CASE 1 -- NORMAL OPERATIONS");
-            PWDSignalSession alice = new PWDSignalSession("Test123", true);
+        // try {
+        //     System.out.println("TEST CASE 1 -- NORMAL OPERATIONS");
+        //     PWDSignalSession alice = new PWDSignalSession("Test123", true);
             
-            PWDSignalSession bob = new PWDSignalSession("Test123", false);
+        //     PWDSignalSession bob = new PWDSignalSession("Test123", false);
 
-            byte[] alicePayload1 = alice.createPayload1();
-            byte[] bobPayload1 = bob.createPayload1();
+        //     byte[] alicePayload1 = alice.createPayload1();
+        //     byte[] bobPayload1 = bob.createPayload1();
             
-            alice.acceptPayload1(bobPayload1, 0);
-            bob.acceptPayload1(alicePayload1, 0);
+        //     alice.acceptPayload1(bobPayload1, 0);
+        //     bob.acceptPayload1(alicePayload1, 0);
 
-            // payload 1 done
+        //     // payload 1 done
 
-            byte[] alicePayload2 = alice.createPayload2();
-            byte[] bobPayload2 = bob.createPayload2();
+        //     byte[] alicePayload2 = alice.createPayload2();
+        //     byte[] bobPayload2 = bob.createPayload2();
             
-            alice.acceptPayload2(bobPayload2, 0);
-            bob.acceptPayload2(alicePayload2, 0);
+        //     alice.acceptPayload2(bobPayload2, 0);
+        //     bob.acceptPayload2(alicePayload2, 0);
 
-            // Payload 2 done
+        //     // Payload 2 done
             
-            byte[] alicePayload3 = alice.createPayload3();
-            byte[] bobPayload3 = bob.createPayload3();
+        //     byte[] alicePayload3 = alice.createPayload3();
+        //     byte[] bobPayload3 = bob.createPayload3();
             
-            alice.acceptPayload3(bobPayload3, 0);
-            bob.acceptPayload3(alicePayload3, 0);
+        //     alice.acceptPayload3(bobPayload3, 0);
+        //     bob.acceptPayload3(alicePayload3, 0);
 
-            System.out.println("Alice state: " + alice.getState());
-            System.out.println("Bob state: " + bob.getState());    
+        //     System.out.println("Alice state: " + alice.getState());
+        //     System.out.println("Bob state: " + bob.getState());    
             
-            System.out.println();
+        //     System.out.println();
 
-            String message = "Hi bob! I'm alice";
-            byte[] messageBytes = message.getBytes();
-            byte[] messageBytesEncrypted = alice.encryptSendPacket(messageBytes, 0, messageBytes.length);
+        //     String message = "Hi bob! I'm alice";
+        //     byte[] messageBytes = message.getBytes();
+        //     byte[] messageBytesEncrypted = alice.encryptSendPacket(messageBytes, 0, messageBytes.length);
 
-            System.out.println("Original message: " + new String(messageBytes, StandardCharsets.UTF_8));
-            System.out.println();
-            System.out.println("Encrypted message: " + new String(messageBytesEncrypted, StandardCharsets.UTF_8));
-            System.out.println();
+        //     System.out.println("Original message: " + new String(messageBytes, StandardCharsets.UTF_8));
+        //     System.out.println();
+        //     System.out.println("Encrypted message: " + new String(messageBytesEncrypted, StandardCharsets.UTF_8));
+        //     System.out.println();
 
-            byte[] messageBytesDecrypted = bob.decryptReceivePacket(messageBytesEncrypted, 0, messageBytesEncrypted.length);
-            System.out.println("Bob's POV: " + new String(messageBytesDecrypted, StandardCharsets.UTF_8));
-            System.out.println();
+        //     byte[] messageBytesDecrypted = bob.decryptReceivePacket(messageBytesEncrypted, 0, messageBytesEncrypted.length);
+        //     System.out.println("Bob's POV: " + new String(messageBytesDecrypted, StandardCharsets.UTF_8));
+        //     System.out.println();
 
-            message = "Yo whats good Alice?";
-            messageBytes = message.getBytes();
-            messageBytesEncrypted = bob.encryptSendPacket(messageBytes, 0, messageBytes.length);
+        //     message = "Yo whats good Alice?";
+        //     messageBytes = message.getBytes();
+        //     messageBytesEncrypted = bob.encryptSendPacket(messageBytes, 0, messageBytes.length);
 
-            System.out.println("Original message: " + new String(messageBytes, StandardCharsets.UTF_8));
-            System.out.println();
-            System.out.println("Encrypted message: " + new String(messageBytesEncrypted, StandardCharsets.UTF_8));
-            System.out.println();
+        //     System.out.println("Original message: " + new String(messageBytes, StandardCharsets.UTF_8));
+        //     System.out.println();
+        //     System.out.println("Encrypted message: " + new String(messageBytesEncrypted, StandardCharsets.UTF_8));
+        //     System.out.println();
 
-            messageBytesDecrypted = alice.decryptReceivePacket(messageBytesEncrypted, 0, messageBytesEncrypted.length);
-            System.out.println("Alice's POV: " + new String(messageBytesDecrypted, StandardCharsets.UTF_8));
-            System.out.println();
+        //     messageBytesDecrypted = alice.decryptReceivePacket(messageBytesEncrypted, 0, messageBytesEncrypted.length);
+        //     System.out.println("Alice's POV: " + new String(messageBytesDecrypted, StandardCharsets.UTF_8));
+        //     System.out.println();
 
-            System.out.println("\n\nTEST CASE 2 -- REFLECTION ATTACK");
+        //     System.out.println("\n\nTEST CASE 2 -- REFLECTION ATTACK");
 
-            // attacker replays Bob's message back to him
+        //     // attacker replays Bob's message back to him
 
-            try {
-                byte[] reflectionAttack = bob.decryptReceivePacket(messageBytesEncrypted, 0, messageBytesEncrypted.length);
-            }
-            catch (Exception e) {
-                System.out.println("Error ocurred during Reflection attack occurred: " + e.getMessage());
-            }
+        //     try {
+        //         byte[] reflectionAttack = bob.decryptReceivePacket(messageBytesEncrypted, 0, messageBytesEncrypted.length);
+        //     }
+        //     catch (Exception e) {
+        //         System.out.println("Error ocurred during Reflection attack occurred: " + e.getMessage());
+        //     }
 
-            System.out.println("\n\nTEST CASE 3 -- REPLAY ATTACK");
+        //     System.out.println("\n\nTEST CASE 3 -- REPLAY ATTACK");
 
 
-            try {
-                byte[] replayAttack = alice.decryptReceivePacket(messageBytesEncrypted, 0, messageBytesEncrypted.length);
-            }
-            catch (Exception e) {
-                System.out.println("Error ocurred during replay attack occurred: " + e.getMessage());
-            }
+        //     try {
+        //         byte[] replayAttack = alice.decryptReceivePacket(messageBytesEncrypted, 0, messageBytesEncrypted.length);
+        //     }
+        //     catch (Exception e) {
+        //         System.out.println("Error ocurred during replay attack occurred: " + e.getMessage());
+        //     }
 
-            System.out.println("\n\nTEST CASE 4 -- WRONG PASSWORD");
+        //     System.out.println("\n\nTEST CASE 4 -- WRONG PASSWORD");
 
-            alice = new PWDSignalSession("Test123", true);
+        //     alice = new PWDSignalSession("Test123", true);
             
-            bob = new PWDSignalSession("Bruh", false);
+        //     bob = new PWDSignalSession("Bruh", false);
 
-            alicePayload1 = alice.createPayload1();
-            bobPayload1 = bob.createPayload1();
+        //     alicePayload1 = alice.createPayload1();
+        //     bobPayload1 = bob.createPayload1();
             
-            alice.acceptPayload1(bobPayload1, 0);
-            bob.acceptPayload1(alicePayload1, 0);
+        //     alice.acceptPayload1(bobPayload1, 0);
+        //     bob.acceptPayload1(alicePayload1, 0);
 
-            // payload 1 done
+        //     // payload 1 done
 
-            alicePayload2 = alice.createPayload2();
-            bobPayload2 = bob.createPayload2();
+        //     alicePayload2 = alice.createPayload2();
+        //     bobPayload2 = bob.createPayload2();
             
-            alice.acceptPayload2(bobPayload2, 0);
-            bob.acceptPayload2(alicePayload2, 0);
+        //     alice.acceptPayload2(bobPayload2, 0);
+        //     bob.acceptPayload2(alicePayload2, 0);
 
-            // Payload 2 done
+        //     // Payload 2 done
             
-            alicePayload3 = alice.createPayload3();
-            bobPayload3 = bob.createPayload3();
+        //     alicePayload3 = alice.createPayload3();
+        //     bobPayload3 = bob.createPayload3();
             
-            alice.acceptPayload3(bobPayload3, 0);
-            bob.acceptPayload3(alicePayload3, 0);
+        //     alice.acceptPayload3(bobPayload3, 0);
+        //     bob.acceptPayload3(alicePayload3, 0);
 
-            System.out.println("Alice state: " + alice.getState());
-            System.out.println("Bob state: " + bob.getState());    
+        //     System.out.println("Alice state: " + alice.getState());
+        //     System.out.println("Bob state: " + bob.getState());    
             
-            System.out.println();
-        }
-        catch (Exception e) {
-            System.out.println("Error occurred during wrong password attack: " + e.getMessage());
-        }
+        //     System.out.println();
+        // }
+        // catch (Exception e) {
+        //     System.out.println("Error occurred during wrong password attack: " + e.getMessage());
+        // }
     }
 
     private static String[] promptForStartupData() {
@@ -170,14 +170,14 @@ public class Main {
             String username = usernameField.getText().trim();
             String serverInput = serverField.getText().trim();
 
-            if (!username.isEmpty() && serverInput.matches("^.+:\\d+$") && username.length() < 15) {
+            if (!username.isEmpty() && serverInput.matches("^.+:\\d+$") && username.length() < 15 && username.indexOf(":") < 0) {
                 String[] parts = serverInput.split(":");
                 
                 toRet[0] = username;
                 toRet[1] = parts[0];
                 toRet[2] = Integer.parseInt(parts[1]) + "";
             } else {
-                JOptionPane.showMessageDialog(null, "Invalid input. Please enter a username (less than 15 characters) and server in IP:PORT format.", "Input Error", JOptionPane.ERROR_MESSAGE);
+                JOptionPane.showMessageDialog(null, "Invalid input. Please enter a username (less than 15 characters) without a : and server in IP:PORT format.", "Input Error", JOptionPane.ERROR_MESSAGE);
             }
         } else {
             JOptionPane.showMessageDialog(null, "User did not proceed with connection.");

@@ -55,18 +55,21 @@ public class Client {
     private String inGameTitle;
 
 
-    private Map<String, Integer> currentPlayersMap;
+    public Map<String, Integer> currentPlayersMap;
     private ArrayList<String> currentPlayersList;
     private ArrayList<String> playersWhoHavePlayed;
     private ArrayList<String> wordsGuessed;
     
-    private String chosenWord = "";
+    public String chosenWord = "";
+    public volatile String guessedWord = "";
 
     private ArrayList<String> wordList;
 
     private JPanel currentlyDisplayedPanel;
-    private JPanel usersPanel;
+    public JPanel usersPanel;
+    public JScrollPane usersScrollPane;
     private JTextArea chatPanel;
+    public JTextField messageArea;
     private Board board;
 
     private Socket socket;
@@ -79,6 +82,7 @@ public class Client {
     private byte openDialogs;
 
     public volatile boolean inPrivate;
+    public volatile long startime = java.time.Instant.now().toEpochMilli();
 
     public Map<String, PWDSignalSession> privateSessions;
 
@@ -463,7 +467,7 @@ public class Client {
             usersPanel.add(new JLabel((p.equals(this.username) ? p + " (You)" : p) + " - " + players.get(p) + " Points"));
         }
         
-        JScrollPane usersScrollPane = new JScrollPane(usersPanel);
+        usersScrollPane = new JScrollPane(usersPanel);
         usersScrollPane.setPreferredSize(new Dimension(WIDTH / 5, HEIGHT * 7 / 10));
         usersScrollPane.setVerticalScrollBarPolicy(JScrollPane.VERTICAL_SCROLLBAR_AS_NEEDED);
         usersScrollPane.setHorizontalScrollBarPolicy(JScrollPane.HORIZONTAL_SCROLLBAR_NEVER);
@@ -491,7 +495,7 @@ public class Client {
         JPanel sendMessagePanel = new JPanel();
         sendMessagePanel.setLayout(new FlowLayout());
         
-        JTextField messageArea = new JTextField();
+        messageArea = new JTextField();
         messageArea.setPreferredSize(new Dimension(WIDTH / 6, HEIGHT * 1 / 20));
         messageArea.addActionListener((_) -> {
             sendMessage(messageArea, chatPanel);
@@ -558,6 +562,7 @@ public class Client {
 
             @Override
             protected Void doInBackground() throws Exception {
+                guessedWord = messageArea.getText();
                 networkHandler.sendMessage(messageArea.getText());
                 return null;
             }
@@ -855,7 +860,7 @@ public class Client {
 
     protected class GameTimer implements Runnable {
         public void run() {
-            long startime = java.time.Instant.now().toEpochMilli();
+            startime = java.time.Instant.now().toEpochMilli();
 
             StringBuilder sb1 = new StringBuilder();
             StringBuilder sb2 = new StringBuilder();

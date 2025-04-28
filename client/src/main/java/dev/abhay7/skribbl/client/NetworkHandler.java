@@ -17,6 +17,8 @@ import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
+import javax.swing.JLabel;
+
 import org.json.JSONException;
 import org.json.JSONObject;
 
@@ -225,11 +227,58 @@ public class NetworkHandler extends Thread {
     private void handleRawGameDataPack(ReceivedPacket packet) {
         if(packet.getData().has("message") && !packet.getData().getString("message").isBlank()) {
             if(!packet.getData().has("type")) {
+                if(client.getBoard().isDrawing()) {
+                    String guess = packet.getData().getString("message").substring(packet.getData().getString("message").indexOf(":") + 2);
+                    if(client.chosenWord.equalsIgnoreCase(guess)) {
+                        try {
+                            new Thread(() -> {
+                                try {
+                                    sendGameDataPack(new GameDataPack("SUCCESS_GUESS:" + guess + ":" + (int) ((30000 - (java.time.Instant.now().toEpochMilli() - this.client.startime)) / 100), "guess"));
+                                } catch(Exception e) { System.err.println(e); }
+                            }).start();
+                        } catch(Exception e) { System.err.println(e); }
+                    }
+                }
                 client.updateMessages(packet.getData().getString("message"));
             } else {
-
                 if(packet.getData().getString("type").equalsIgnoreCase("word")) {
                     this.client.getBoard().addWordPhrase(packet.getData().getString("message"));
+                } else if(packet.getData().getString("type").equalsIgnoreCase("guess")) {
+                    if(packet.getData().getString("message").split(":")[0].equals("SUCCESS_GUESS") && packet.getData().getString("message").split(":")[1].equals(client.guessedWord)) {
+                        this.client.updateMessages("GUESS IS CORRECT");
+                        try {
+                            this.client.currentPlayersMap.put(client.username, this.client.currentPlayersMap.get(client.username) + Integer.parseInt(packet.getData().getString("message").split(":")[2]));
+                            this.client.usersPanel.removeAll();
+                            for(String p: this.client.currentPlayersMap.keySet()) {
+                                this.client.usersPanel.add(new JLabel((p.equals(this.client.getUsername()) ? p + " (You)" : p) + " - " + this.client.currentPlayersMap.get(p) + " Points"));
+                            }
+                            this.client.usersPanel.revalidate();
+                            this.client.usersPanel.repaint();
+                            try {
+                                new Thread(() -> {
+                                    try {
+                                        sendGameDataPack(new GameDataPack(this.client.getUsername() + ":" + this.client.currentPlayersMap.get(this.client.username), "scoreupdate"));
+                                    } catch(Exception e) { System.err.println(e); }
+                                }).start();
+                            } catch(Exception e) { System.err.println(e); }
+                        } catch(Exception e) {
+                            System.out.println(e);
+                        }
+                    }
+                } else if(packet.getData().getString("type").equalsIgnoreCase("scoreupdate")) {
+                    try {
+                        String username = packet.getData().getString("message").split(":")[0];
+                        int newScore = Integer.parseInt(packet.getData().getString("message").split(":")[1]);
+                        this.client.currentPlayersMap.put(username, newScore);
+                        this.client.usersPanel.removeAll();
+                        for(String p: this.client.currentPlayersMap.keySet()) {
+                            this.client.usersPanel.add(new JLabel((p.equals(this.client.getUsername()) ? p + " (You)" : p) + " - " + this.client.currentPlayersMap.get(p) + " Points"));
+                        }
+                        this.client.usersPanel.revalidate();
+                        this.client.usersPanel.repaint();
+                    } catch(Exception e) {
+                        System.err.println(e);
+                    }
                 }
             }
         } else /* if(packet.getData().has("image")) */ {
@@ -459,6 +508,19 @@ public class NetworkHandler extends Thread {
         wfp = WordsFetchPack.fromJSON(json);
 
         return wfp;
+    }
+
+    protected synchronized void sendGameDataPack(GameDataPack gdp) throws IOException, JSONException, InterruptedException, ExecutionException, TimeoutException {
+        this.setWriting(true);
+
+        if (!client.inPrivate) {
+            sendDataPackage(gdp, MessageType.GAME_DATA);
+        }
+        else {
+            sendToClientsFriendsPriv(gdp);
+        }
+
+        this.setWriting(false);
     }
 
     // Send a message
