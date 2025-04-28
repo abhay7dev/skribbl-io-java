@@ -591,11 +591,12 @@ public class Client {
                     System.out.println("Error fetching words: " + e);
                 }
             }
-            String chosenWord = this.wordList.get((int) (this.wordList.size() * (Math.random())));
+            this.chosenWord = this.wordList.get((int) (this.wordList.size() * (Math.random())));
             while(this.wordsGuessed.contains(chosenWord)) {
                 chosenWord = this.wordList.get((int) (this.wordList.size() * (Math.random())));
             }
             this.board.addWordPhrase(this.chosenWord);
+            try { new Thread(new GameTimer()).start(); } catch(Exception e) { }
         }
     }
     
@@ -851,4 +852,50 @@ public class Client {
     protected NetworkHandler getNetworkHandler() { return this.networkHandler; }
     protected Board getBoard() { return this.board; }
     protected String getUsername() { return this.username; }
+
+    protected class GameTimer implements Runnable {
+        public void run() {
+            long startime = java.time.Instant.now().toEpochMilli();
+
+            StringBuilder sb1 = new StringBuilder();
+            StringBuilder sb2 = new StringBuilder();
+            int in = -1;
+            do {
+                in = (int) (Math.random() * chosenWord.length());
+            } while(in < 0 && chosenWord.charAt(in) == ' ');
+
+            for(int i = 0; i < chosenWord.length(); i++) {
+                if(chosenWord.charAt(i) == ' ') {
+                    sb1.append(" ");
+                    sb2.append(" ");
+                } else { 
+                    sb1.append("_");
+                    if(i == in) sb2.append(chosenWord.charAt(i));
+                    else sb2.append("_");
+                }
+            }
+
+            try {
+                System.out.println("SENT sb1 " + sb1.toString());
+                networkHandler.sendWordUpdate(sb1.toString());
+            } catch(Exception e) {}
+
+            boolean sent = false;
+
+            while(java.time.Instant.now().toEpochMilli() < startime + 30000) {
+
+                try {
+                    if(!sent && java.time.Instant.now().toEpochMilli() > startime + 15000) {
+                        System.out.println("SENT sb2 " + sb2.toString());
+                        networkHandler.sendWordUpdate(sb2.toString());            
+                        sent = true;
+                    }
+                    Thread.sleep(1000);
+                } catch(Exception e) {}
+            }
+
+            System.out.println("Finished gametimer");
+
+        }
+    }
 }

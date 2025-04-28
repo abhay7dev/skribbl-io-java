@@ -13,11 +13,16 @@ import org.json.JSONObject;
 
 public class GameDataPack extends DataPackage {
 
+    private String type = "";
     private String message = "";
     private BufferedImage image;
 
     public GameDataPack(String message) {
         this(true, message);
+    }
+
+    public GameDataPack(String message, String type) {
+        this(true, message, type);
     }
 
     public GameDataPack(BufferedImage image) {
@@ -32,6 +37,12 @@ public class GameDataPack extends DataPackage {
     public GameDataPack(boolean isServerRequest, BufferedImage image) {
         super(isServerRequest);
         this.image = image;
+    }
+
+    public GameDataPack(boolean isServerRequest, String message, String type) {
+        super(isServerRequest);
+        this.message = message;
+        this.type = type;
     }
 
     public static GameDataPack fromJSON(String json) throws JSONException {
@@ -49,8 +60,13 @@ public class GameDataPack extends DataPackage {
                 System.out.println(ioe);
                 return null;
             }
-        } else if(jo.has("message") && !jo.getString("message").isBlank()) {
-            return new GameDataPack(isServerRequest, jo.getString("message"));
+        }
+        if(jo.has("message") && !jo.getString("message").isBlank()) {
+            if(jo.has("type")) {
+                return new GameDataPack(jo.getString("message"), jo.getString("type"));
+            } else {
+                return new GameDataPack(isServerRequest, jo.getString("message"));
+            }
         }
 
         return null;
@@ -76,10 +92,15 @@ public class GameDataPack extends DataPackage {
             }
         }
 
+        if(!this.type.isBlank()) {
+            jo.put("type", this.type);
+        }
+
         return jo;
     }
 
     public String getMessage() { return this.message; }
+    public String getType() { return this.type; }
     public BufferedImage getImage() { return this.image; }
     
 }

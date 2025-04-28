@@ -224,7 +224,14 @@ public class NetworkHandler extends Thread {
 
     private void handleRawGameDataPack(ReceivedPacket packet) {
         if(packet.getData().has("message") && !packet.getData().getString("message").isBlank()) {
-            client.updateMessages(packet.getData().getString("message"));
+            if(!packet.getData().has("type")) {
+                client.updateMessages(packet.getData().getString("message"));
+            } else {
+
+                if(packet.getData().getString("type").equalsIgnoreCase("word")) {
+                    this.client.getBoard().addWordPhrase(packet.getData().getString("message"));
+                }
+            }
         } else /* if(packet.getData().has("image")) */ {
             if(client.getBoard().getCanvas() != null) {
                 GameDataPack gdp = GameDataPack.fromJSON(packet.getData());
@@ -463,6 +470,23 @@ public class NetworkHandler extends Thread {
 
         if (!client.inPrivate) {
             sendDataPackage(gdp, MessageType.GAME_DATA);
+        }
+        else {
+            sendToClientsFriendsPriv(gdp);
+        }
+
+        this.setWriting(false);
+    }
+
+    protected synchronized void sendWordUpdate(String msg) throws IOException, JSONException, InterruptedException, ExecutionException, TimeoutException {
+        this.setWriting(true);
+
+
+        GameDataPack gdp = new GameDataPack(msg, "word");
+
+        if (!client.inPrivate) {
+            sendDataPackage(gdp, MessageType.GAME_DATA);
+            System.out.println("Sent word update");
         }
         else {
             sendToClientsFriendsPriv(gdp);

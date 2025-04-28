@@ -305,7 +305,7 @@ public class Server {
 
         private void handleDataPackage(DataPackage dataPackage) {
             
-            System.out.println("Received Data Package: " + dataPackage);
+            if(!(dataPackage instanceof KeepAlivePack)) System.out.println("Received Data Package: " + dataPackage);
 
             if (this.verified && dataPackage != null && dataPackage.isServerRequest()) {
             
@@ -399,7 +399,12 @@ public class Server {
                         try {
                             GameDataPack gdp = ((GameDataPack) dataPackage);
                             if(!gdp.getMessage().isBlank()) {
-                                this.getCurrentLobby().notifyAllExceptSender(new GameDataPack(false, this.getUsername() + ": " + gdp.getMessage()), this, MessageType.GAME_DATA);
+                                if(gdp.getType().isBlank()) {
+                                    this.getCurrentLobby().notifyAllExceptSender(new GameDataPack(false, this.getUsername() + ": " + gdp.getMessage()), this, MessageType.GAME_DATA);
+                                } else {
+                                    System.out.println("Sending " + gdp.getType());
+                                    this.getCurrentLobby().notifyAllExceptSender(new GameDataPack(gdp.getMessage(), gdp.getType()), this, MessageType.GAME_DATA);
+                                }
                             } else if(gdp.getImage() != null) {
                                 this.getCurrentLobby().notifyAllExceptSender(new GameDataPack(false, gdp.getImage()), this, MessageType.GAME_DATA);
                             }

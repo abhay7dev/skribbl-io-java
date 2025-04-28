@@ -11,8 +11,11 @@ import java.awt.event.ActionListener;
 import java.awt.event.MouseEvent;
 import java.awt.event.MouseListener;
 import java.awt.event.MouseMotionListener;
+import java.awt.font.TextAttribute;
 import java.awt.image.BufferedImage;
 import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.Map;
 
 import javax.swing.BorderFactory;
 import javax.swing.BoxLayout;
@@ -28,6 +31,8 @@ public class Board extends JPanel {
 
     private Client client;
     private Canvas canvas;
+
+    private JLabel wordLabel;
 
     private boolean isDrawing;
 
@@ -65,12 +70,19 @@ public class Board extends JPanel {
 
         drawingMenu.add(clearButton);
 
-        canvas.setBorder(BorderFactory.createLineBorder(Color.BLACK, 10));
 
+        
+        canvas.setBorder(BorderFactory.createLineBorder(Color.BLACK, 10));
+        
         this.setLayout(new BoxLayout(this, BoxLayout.Y_AXIS));
         this.setBorder(BorderFactory.createEmptyBorder(20, 0, 20, 0));
         this.add(canvas);
         this.add(drawingMenu);
+        wordLabel = new JLabel("WORD GOES HERE");
+        Map<TextAttribute, Object> attributes = new HashMap<TextAttribute, Object>();
+        attributes.put(TextAttribute.TRACKING, 0.5);
+        wordLabel.setFont(getFont().deriveFont(20.0f).deriveFont(attributes));
+        this.add(wordLabel);
     }
 
     public boolean isDrawing() { return this.isDrawing; }
@@ -78,11 +90,9 @@ public class Board extends JPanel {
     public Canvas getCanvas() { return this.canvas; }
 
     protected void addWordPhrase(String phrase) {
-        JLabel jl = new JLabel(phrase.substring(0, 1).toUpperCase() + phrase.substring(1, phrase.length()));
-        jl.setFont(getFont().deriveFont(20.0f));
-        this.add(jl);
-        this.revalidate();
-        this.repaint();
+        wordLabel.setText(phrase.substring(0, 1).toUpperCase() + phrase.substring(1, phrase.length()));
+        wordLabel.revalidate();
+        wordLabel.repaint();
     }
 
     private JButton getColorButton(Color c) {
@@ -266,10 +276,12 @@ public class Board extends JPanel {
         public void mouseReleased(MouseEvent e) {
             isMouseDown = false;
             e.consume();
-            try {
-                client.getNetworkHandler().sendBoard(canvas.getDrawing());
-            } catch(Exception er) {
-                System.out.println(er);
+            if(isDrawing) {
+                try {
+                    client.getNetworkHandler().sendBoard(canvas.getDrawing());
+                } catch(Exception er) {
+                    System.out.println(er);
+                }
             }
         }
 
