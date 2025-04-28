@@ -27,8 +27,11 @@ import javax.swing.SwingUtilities;
 import javax.swing.SwingWorker;
 import javax.swing.border.EmptyBorder;
 
+import org.json.JSONArray;
+
 import dev.abhay7.skribbl.client.jameskwong.pwdsignal.PWDSignalSession;
 import dev.abhay7.skribbl.client.jameskwong.pwdsignal.PWDSignalSessionState;
+import dev.abhay7.skribbl.server.datapacks.GameDataPack;
 import dev.abhay7.skribbl.server.datapacks.LobbyJoinPack;
 import dev.abhay7.skribbl.server.datapacks.PayloadPack;
 import dev.abhay7.skribbl.server.datapacks.WordsFetchPack;
@@ -56,8 +59,8 @@ public class Client {
 
 
     public Map<String, Integer> currentPlayersMap;
-    private ArrayList<String> currentPlayersList;
-    private ArrayList<String> playersWhoHavePlayed;
+    public ArrayList<String> currentPlayersList;
+    public ArrayList<String> playersWhoHavePlayed;
     private ArrayList<String> wordsGuessed;
     
     public String chosenWord = "";
@@ -514,7 +517,7 @@ public class Client {
             startLobbyButton.addActionListener((_) -> {
                 if(this.getCurrentPlayersList().size() > 1) {
                     try {
-                        String player = chooseRandomPlayer();
+                        String player = chooseNextPlayer();
                         if(player != null) {
                             networkHandler.startLobby(player);
                             eastWrapper.remove(eastWrapper.getComponent(eastWrapper.getComponentCount() - 1));
@@ -545,7 +548,7 @@ public class Client {
         return toRet;
     }
 
-    private String chooseRandomPlayer() {
+    private String chooseNextPlayer() {
         if(playersWhoHavePlayed.size() < currentPlayersList.size()) {
             String player = currentPlayersList.get(playersWhoHavePlayed.size());
             playersWhoHavePlayed.add(player);
@@ -606,7 +609,7 @@ public class Client {
     }
     
     // Leave a lobby
-    private void leaveLobby() {
+    protected void leaveLobby() {
         this.isPlaying = false;
         this.isHosting = false;
         inPrivate = false;
@@ -778,6 +781,8 @@ public class Client {
     }
 
     protected void updateMessages(String message) {
+        System.out.println("playersWhoHavePlayed size" + playersWhoHavePlayed.size());
+        System.out.println("currentPlayersList size" + currentPlayersList.size());
         if (chatPanel != null) {
             SwingUtilities.invokeLater(() -> {
                 chatPanel.setText(chatPanel.getText() + "\n" + message);
@@ -813,7 +818,7 @@ public class Client {
     private void showMessageDialog(String msg, String titleMsg, int errorCode) {
         showMessageDialog(msg, titleMsg, errorCode, true);
     }
-    private void showMessageDialog(String msg, String titleMsg, int errorCode, boolean invokeLater) {
+    protected void showMessageDialog(String msg, String titleMsg, int errorCode, boolean invokeLater) {
         if(invokeLater) {
             SwingUtilities.invokeLater(() -> {
                 if(openDialogs < MAX_DIALOG_COUNT) {
@@ -899,7 +904,26 @@ public class Client {
                 } catch(Exception e) {}
             }
 
-            System.out.println("Finished gametimer");
+            try {
+                board.setDrawing(false);
+                board.getCanvas().delLines();
+                String player = chooseNextPlayer();
+                if(player != null) {
+                    networkHandler.sendGameDataPack(new GameDataPack(player + ":" + new JSONArray(playersWhoHavePlayed.toArray()).toString(), "nextplayer"));
+                } else {
+                    networkHandler.sendGameDataPack(new GameDataPack("done!", "gamedone"));
+                    String winner = "";
+                    int highest = -1;
+                    for(String s: currentPlayersList) {
+                        if(currentPlayersMap.get(s) > highest) {
+                            winner = s;
+                            highest = currentPlayersMap.get(s);
+                        }
+                    }
+                    showMessageDialog("Game is over! Winner is: " + winner + " with " + highest + " points.", "GAME COMPLETED", JOptionPane.OK_OPTION, true);
+                    leaveLobby();
+                }
+            } catch(Exception e) { System.err.println(e); }
 
         }
     }

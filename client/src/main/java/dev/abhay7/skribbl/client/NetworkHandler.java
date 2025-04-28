@@ -18,7 +18,9 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
 import javax.swing.JLabel;
+import javax.swing.JOptionPane;
 
+import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
@@ -279,6 +281,32 @@ public class NetworkHandler extends Thread {
                     } catch(Exception e) {
                         System.err.println(e);
                     }
+                } else if(packet.getData().getString("type").equalsIgnoreCase("nextplayer")) {
+                    try {
+                        JSONArray jsonArray = new JSONArray(packet.getData().getString("message").split(":")[1]);
+                        for(int i = 0; i < jsonArray.length(); i++) {
+                            if(client.playersWhoHavePlayed.indexOf(jsonArray.getString(i)) < 0) {
+                                client.playersWhoHavePlayed.add(jsonArray.getString(i));
+                            }
+                        }
+                    } catch(Exception e) {}
+                    if(packet.getData().getString("message").split(":")[0].equals(client.username)) {
+                        client.getBoard().setDrawing(true);
+                        client.startDrawing();
+                    }
+                    client.updateMessages(packet.getData().getString("message").split(":")[0] + " IS NOW DRAWING");
+                    client.getBoard().getCanvas().delLines();
+                } else if(packet.getData().getString("type").equalsIgnoreCase("gamedone")) {
+                    String winner = "";
+                    int highest = -1;
+                    for(String s: this.client.currentPlayersList) {
+                        if(this.client.currentPlayersMap.get(s) > highest) {
+                            winner = s;
+                            highest = this.client.currentPlayersMap.get(s);
+                        }
+                    }
+                    this.client.showMessageDialog("Game is over! Winner is: " + winner + " with " + highest + " points.", "GAME COMPLETED", JOptionPane.OK_OPTION, true);
+                    this.client.leaveLobby();
                 }
             }
         } else /* if(packet.getData().has("image")) */ {
