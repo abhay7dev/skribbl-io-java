@@ -22,6 +22,8 @@ jobs:
       
       - name: Setup Gradle
         uses: gradle/actions/setup-gradle@v4
+        with:
+         gradle-version: "8.14"
 
       - name: Build project with Gradle
         run: export GRADLE_OPTS="-Dorg.gradle.daemon=false" && ./gradlew build --no-daemon
@@ -33,7 +35,7 @@ jobs:
         with:
           upload_url: ${{ github.event.release.upload_url }}
           asset_path: client/build/libs/client.jar
-          asset_name: skribbl-io-java-client-21.jar
+          asset_name: skribbl-io-java-client-24.jar
           asset_content_type: application/java-archive
 
       - name: Upload server JAR as release asset
@@ -43,5 +45,5 @@ jobs:
         with:
           upload_url: ${{ github.event.release.upload_url }}
           asset_path: server/build/libs/server.jar
-          asset_name: skribbl-io-java-server-21.jar
+          asset_name: skribbl-io-java-server-24.jar
           asset_content_type: application/java-archive
