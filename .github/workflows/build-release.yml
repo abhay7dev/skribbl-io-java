@@ -34,7 +34,7 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           upload_url: ${{ github.event.release.upload_url }}
-          asset_path: client/build/libs/client.jar
+          asset_path: client/build/libs/client-1.0.jar
           asset_name: skribbl-io-java-client-24.jar
           asset_content_type: application/java-archive
 
@@ -44,6 +44,6 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           upload_url: ${{ github.event.release.upload_url }}
-          asset_path: server/build/libs/server.jar
+          asset_path: server/build/libs/server-1.0.jar
           asset_name: skribbl-io-java-server-24.jar
           asset_content_type: application/java-archive
